@@ -1,5 +1,6 @@
 ---
 description: Spawn a Recon-Only Subagent for massive scopes (e.g., /enum client: Acme project: Internal scope: 10.0.0.0/16)
+tags: [#netPen]
 ---
 I am executing the `/enum` command.
 **Arguments:** $ARGUMENTS

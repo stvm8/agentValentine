@@ -1,6 +1,7 @@
 ---
 description: Start or resume a Cloud Pentest
 disable-model-invocation: true
+tags: [#cloudPen]
 ---
 I am executing the `/work` command.
 **Arguments:** $ARGUMENTS

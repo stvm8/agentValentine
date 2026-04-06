@@ -1,5 +1,6 @@
 ---
 description: Load a massive ROE file, lock in strict constraints, and generate a 1-target Game Plan.
+tags: [#bountyHunter]
 ---
 I am executing the `/brief` command.
 **Target File:** $ARGUMENTS

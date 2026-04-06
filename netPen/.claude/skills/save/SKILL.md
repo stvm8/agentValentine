@@ -1,6 +1,7 @@
 ---
 description: Force the agent to save its current state so you can /clear
 disable-model-invocation: true
+tags: [#netPen]
 ---
 I am executing the `/save` command. 
 
