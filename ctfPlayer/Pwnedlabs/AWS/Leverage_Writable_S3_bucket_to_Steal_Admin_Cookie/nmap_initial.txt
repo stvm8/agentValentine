@@ -1,0 +1,17 @@
+Starting Nmap 7.98 ( https://nmap.org ) at 2026-04-05 09:56 -0500
+Nmap scan report for 10.1.20.25
+Host is up (0.072s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.11 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 af:aa:87:b8:d3:25:53:9d:54:8b:6b:b4:ad:d6:f5:07 (RSA)
+|   256 a8:c6:a8:03:6b:a2:f6:e8:6d:50:ee:ee:e8:0e:24:30 (ECDSA)
+|_  256 ae:ff:06:3b:c6:6e:d1:41:a8:8d:0d:f2:d4:1a:2b:22 (ED25519)
+80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))
+|_http-server-header: Apache/2.4.41 (Ubuntu)
+|_http-title: Huge Logistics
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 10.45 seconds

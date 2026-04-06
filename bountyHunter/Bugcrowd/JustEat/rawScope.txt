@@ -1,0 +1,305 @@
+Targets 
+4 out of 4
+
+Bugcrowd calculates scope ratings based on the depth and breadth of in-scope targets.
+Payments
+In scope
+Payment reward chart
+P1
+$3500 – $4500
+P2
+$1500 – $2500
+P3
+$500 – $750
+P4
+$100
+Name / Location	Tags	Known issues
+api-payments-secure-prod.skippayments.com
+https://api-payments-secure-prod.skippayments.com
+API Testing
+0
+takeawaypay.azurefd.net/en/takeawaypay/
+https://takeawaypay.azurefd.net/en/takeawaypay/
+Website Testing
+1
+takeaway.pay-creditcard.takeaway.com
+https://takeaway.pay-creditcard.takeaway.com/
+Website Testing
+0
+pay.{business_critical_assets} *see business assets for more information	
+Website Testing
+0
+global-payments-web.payments.pmt-1.eu-west-1.production.jet-external.com
+https://global-payments-web.payments.pmt-1.eu-west-1.production.jet-external.com
+Website Testing
+0
+APIs
+In scope
+Payment reward chart
+P1
+$3500 – $4500
+P2
+$1500 – $2500
+P3
+$500 – $750
+P4
+$100
+The applications listed below are part of the customer-facing web platform. You may encounter them during your testing. A comprehensive list of all API specifications is available at: https://uk.api.just-eat.io/docs. Please note, that all of the below share the same codebase.
+
+Focus areas - Authorization bypasses, IDORs, PII disclosure, business logic abuse
+Name / Location	Tags	Known issues
+rest.api.eu-central-1.production.jet-external.com
+https://rest.api.eu-central-1.production.jet-external.com
+API Testing
+3
+uk.api.just-eat.io
+https://uk.api.just-eat.io
+API Testing
+7
+aus.api.just-eat.io
+https://aus.api.just-eat.io/
+API Testing
+0
+api-skipthedishes.skipthedishes.com
+https://api-skipthedishes.skipthedishes.com
+API Testing
+0
+i18n.api.just-eat.io
+https://i18n.api.just-eat.io
+API Testing
+0
+cw-api.takeaway.com
+https://cw-api.takeaway.com
+API Testing
+1
+Business assets
+In scope
+Payment reward chart
+P1
+$3500 – $4500
+P2
+$1500 – $2500
+P3
+$300 – $500
+Same vulnerabilities found across applications, domains, subdomains, or environments (e.g., staging, dev) —may share the same codebase and will be treated as duplicates unless clear functional differences exist; related findings should be submitted in a single report for potential recognition, otherwise they may not be eligible for separate rewards.
+
+Focus areas - SQL Injections, RCE, auth bypasses, exfiltration of sensitive or PII data
+Name / Location	Tags	Known issues
+*.thuisbezorgd.nl
+https://www.thuisbezorgd.nl/
+Website Testing
+34
+*.takeaway.com
+https://takeaway.com
+Website Testing
+94
+*.skipthedishes.com
+https://skipthedishes.com
+Website Testing
+36
+*.just-eat.dk
+https://just-eat.dk
+Website Testing
+2
+*.lieferando.de
+https://lieferando.de
+Website Testing
+17
+*.pyszne.pl
+https://pyszne.pl
+Website Testing
+13
+*.bistro.sk
+https://bistro.sk
+Website Testing
+14
+*.just-eat.es
+https://just-eat.es
+Website Testing
+5
+*.just-eat.co.uk
+https://www.just-eat.co.uk
+Website Testing
+30
+*.just-eat.ch
+https://just-eat.ch
+Website Testing
+3
+*.10bis.co.il
+https://10bis.co.il
+Website Testing
+11
+*.scoober.com
+https://scoober.com
+Website Testing
+9
+*.just-eat.com
+https://just-eat.com
+Website Testing
+17
+*.skippayments.com
+https://skippayments.com
+Website Testing
+0
+Mobile applications
+In scope
+Payment reward chart
+P1
+$3500 – $4500
+P2
+$1500 – $2500
+P3
+$500 – $750
+Please note that server-side vulnerabilities will fall under other scopes. Vulnerabilities which require a rooted/jailbroken device are considered out-of-scope.
+Name / Location	Tags	Known issues
+Takeaway.com
+https://play.google.com/store/apps/developer?id=Takeaway.com
+Mobile Application Testing
+Android
+1
+Just-Eat Holding Limited
+https://play.google.com/store/apps/developer?id=Just-Eat+Holding+Limited
+Mobile Application Testing
+Android
+1
+10bis.co.il ltd.
+https://play.google.com/store/apps/developer?id=10bis.co.il+ltd.
+Mobile Application Testing
+Android
+0
+Skip Canada
+https://play.google.com/store/apps/developer?id=Skip+Canada
+Mobile Application Testing
+Android
+0
+Just-Eat.com
+https://apps.apple.com/nz/developer/just-eat-com/id383091095
+Mobile Application Testing
+iOS
+0
+Takeaway.com Central Core B.V.
+https://apps.apple.com/it/developer/takeaway-com-central-core-b-v/id329472762
+Mobile Application Testing
+iOS
+0
+SkipTheDishes
+https://apps.apple.com/us/developer/skipthedishes/id969229980
+Mobile Application Testing
+iOS
+3
+10bis.co.il, Ltd
+https://apps.apple.com/us/developer/10bis-co-il-ltd/id434368194
+Mobile Application Testing
+iOS
+1
+Other assets
+In scope
+Payment reward chart
+P1
+$1500 – $2500
+P2
+$700 – $1000
+P3
+$100 – $500
+Focus areas - SQL Injections, RCE, auth bypasses, exfiltration of sensitive or PII data
+Name / Location	Tags	Known issues
+*.justeattakeaway.com
+https://www.justeattakeaway.com
+Website Testing
+19
+*.just-eat.io
+https://just-eat.io/
+Website Testing
+3
+*.justeat-int.com
+https://api.justeat-int.com
+Website Testing
+1
+*.yourdelivery.de
+https://yourdelivery.de
+Website Testing
+3
+*.just-data.io
+https://just-data.io
+Website Testing
+1
+*.jet-external.com
+https://jet-external.com
+Website Testing
+4
+github.com/justeattakeaway
+https://github.com/justeattakeaway
+Github
+3
+Ouf of scope
+Out of scope
+Name / Location	Tags	Known issues
+*.business.just-eat.co.uk		0
+General Guidance
+
+We align with the Bugcrowd Vulnerability Rating Taxonomy, which defines the maximum severity for each vulnerability type. This means that certain findings, such as Reflected XSS, are capped at a maximum of P3, regardless of impact or context. Severity assessments are bound by the vulnerability category and do not escalate beyond the capped level defined in the taxonomy.
+
+Some resources, URLs, and applications share the same codebase. As a result, identical vulnerabilities across different domains, URLs, or subdomains will be treated as duplicates. However, some functionalities may differ, meaning certain features could exist on one domain but not on another. This applies to “staging”, “dev” and other environments. If you find the same vulnerability on multiple instances, such as the same URL affecting different API endpoints or domains, please report them in a single ticket to be considered for additional recognition rewards. Otherwise, they will be treated as duplicates.
+
+Testing is only authorized on the targets listed as In-Scope. Any domain/property of JustEatTakeaway not listed in the targets section is out of scope. This includes any/all subdomains not listed above. If you believe you've identified a vulnerability on a system outside the scope, please inquire through the Bugcrowd Support Portal before submitting.
+
+Behavior that compromises the stability and integrity of the site is out of scope (specifically the production environment). For example, do not target other user's data (use one of your other sets of credentials), delete/remove/edit parts of the site, engage any sort of DoS attack, and/or compromise any target's ability to function for other users.
+
+For all other sites in this scope, purchasing of goods on the platform will be at your own risk & cost, we hope to provide additional test credentials, payments & restaurants in the future.
+
+User Agent Requirement
+
+Please add the following header to your HTTP traffic to prevent interruptions and verify non-malicious behavior. This will help the Just Eat team identify that activity is coming from a researcher on the program and ensure that your testing is not blocked or interrupted.
+X-Bug-Bounty:<bugcrowdusername>
+
+Credentials
+
+To gain access to the application, please sign up for an account using your @bugcrowdninja.com email address. For more info regarding @bugcrowdninja email addresses, see here.
+
+Excluded Submission Types
+
+Vulnerabilities or reports lacking a working Proof of Concept (PoC), require significant user action (e.g., disabling browser security settings) or are tied to outdated or unsupported devices/software.
+P5 vulnerabilities
+Availability/volumetric testing e.g.:
+DoS/DDoS/Network DoS
+Rate limiting bypass attempts
+Email bombing flooding
+Session persistence concerns (e.g., valid session remaining post-logout).
+Vulnerabilities that are best practices or recommendations, including:
+SSL/TLS configurations
+DNS settings (e.g., SPF, DMARC)
+Cookie configurations (e.g., flags, expiration policies)
+Mobile security mechanisms (e.g., pinning, protection measures)
+Absence of standard security headers (e.g., HSTS, CSP)
+Open redirects are marked as informative and closed
+N-day/Third party 0-day Policy
+
+When N-Day bugs are released to the public, we will consider these as in scope after 30 days has gone by
+e.g: N-day released on 01/01/2025, we would consider it in-scope on 31/01/2025
+Out of Scope
+
+Interacting or manipulate other stakeholders and their associated accounts including:
+Social engineering attacks
+Phishing attacks
+Physical attacks
+Third party providers and services
+Potential post-exploitation scenarios: If you believe you've identified a vulnerability that may lead to post-exploitation activity including modification or destruction of data please stop testing and submit your finding. We will work with you to evaluate the vulnerability and award you accordingly for the final impact and severity.
+Generally every subdomain pointing to *.leadfamly.com or *.playable.com.
+Stolen/Breached Credentials
+
+If you happen to identify vulnerabilities involving data that has been exposed or leaked such as dark web forums or leaked credential sites. You can report it to this engagement. However, be aware that it is only eligible for points-based compensation. This policy helps maintain the highest standard of operational confidentiality, integrity, and compliance.
+
+Statement of non-eligibility
+
+Employees of JustEatTakeaway.com and all its subsidiaries (including former employees that separated from Takeaway.com within the prior 12 months), contingent workers, contractors and their personnel, and consultants, as well as their immediate family members and persons living in the same household are not eligible to receive bounties or rewards of any kind under this program.
+
+Safe Harbor:
+
+When conducting vulnerability research according to this policy, we consider this research to be:
+
+Authorized in accordance with the Computer Fraud and Abuse Act (CFAA) (and/or similar state laws), and we will not initiate or support legal action against you for accidental, good faith violations of this policy;
+Exempt from the Digital Millennium Copyright Act (DMCA), and we will not bring a claim against you for circumvention of technology controls;
+Exempt from restrictions in our Terms & Conditions that would interfere with conducting security research, and we waive those restrictions on a limited basis for work done under this policy; and
+Lawful, helpful to the overall security of the Internet, and conducted in good faith.
+You are expected, as always, to comply with all applicable laws.
+We’re committed to supporting good-faith research and collaboration. If you’re unsure whether an action is permitted, please refer bugcrowd and rules before attempting

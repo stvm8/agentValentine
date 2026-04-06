@@ -1,0 +1,78 @@
+// Include necessary import statements
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.lambda.AWSLambdaClient;
+import com.amazonaws.services.lambda.model.InvokeRequest;
+import com.amazonaws.services.lambda.model.InvokeResult;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.bumptech.glide.Glide;
+
+import java.nio.charset.StandardCharsets;
+
+public class MainActivity extends Activity {
+
+    private static final String IDENTITY_POOL_ID = "us-east-1:d2fecd68-ab89-48ae-b70f-44de60381367";
+    private static final String BUCKET_NAME = "hl-app-images";
+    private static final String IMAGE_KEY = "hl.png";
+
+    private AWSCredentialsProvider credentialsProvider;
+    private AWSLambdaClient awsLambdaClient;
+    private AmazonS3Client s3Client;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        ImageView logoImageView = findViewById(R.id.logoImageView);
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        EditText trackingNumberEditText = findViewById(R.id.trackingNumberEditText);
+        Button checkStatusButton = findViewById(R.id.checkStatusButton);
+
+        credentialsProvider = new CognitoCachingCredentialsProvider(
+                getApplicationContext(),
+                IDENTITY_POOL_ID,
+                Regions.US_EAST_1
+        );
+
+        s3Client = new AmazonS3Client(credentialsProvider);
+
+        // Load logo from S3 using Glide
+        Glide.with(this)
+                .load(s3Client.getUrl(BUCKET_NAME, IMAGE_KEY))
+                .into(logoImageView);
+
+        // Lambda client for invoking Lambda function
+        awsLambdaClient = new AWSLambdaClient(credentialsProvider);
+
+        checkStatusButton.setOnClickListener(view -> {
+            String trackingNumber = trackingNumberEditText.getText().toString();
+            if (!trackingNumber.isEmpty()) {
+                try {
+                    InvokeRequest invokeRequest = new InvokeRequest().withFunctionName("Tracking")
+                            .withPayload("\"" + trackingNumber + "\"");
+                    InvokeResult invokeResult = awsLambdaClient.invoke(invokeRequest);
+
+                    // Use the result returned by the Lambda function as package status
+                    String result = new String(invokeResult.getPayload().array(), StandardCharsets.UTF_8);
+                    statusTextView.setText(result);
+                } catch (Exception e) {
+                    Log.e("MainActivity", "Error occurred while invoking Lambda function.", e);
+                    Toast.makeText(this, "Error occurred while checking status.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Please enter a tracking number.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+}

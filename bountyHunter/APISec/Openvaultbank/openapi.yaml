@@ -1,0 +1,858 @@
+openapi: 3.1.0
+info:
+  title: OpenVault Bank API
+  description: Mock banking API for security education and testing
+  version: 1.2.0
+paths:
+  /api/v1/auth/token:
+    post:
+      tags:
+      - Auth
+      summary: Login
+      description: 'Authenticate a user and return a JWT access token.
+
+
+        Accepts email + password, returns a bearer token.'
+      operationId: login_api_v1_auth_token_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/register:
+    post:
+      tags:
+      - Auth
+      summary: Register
+      description: 'Register a new user and create a checking account.
+
+
+        Returns a JWT token so the user is logged in immediately.'
+      operationId: register_api_v1_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/reset-request:
+    post:
+      tags:
+      - Auth
+      summary: Request Password Reset
+      description: 'Request a password reset code.
+
+
+        Generates a 6-digit numeric code with a 15-minute expiry.'
+      operationId: request_password_reset_api_v1_auth_reset_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/reset-confirm:
+    post:
+      tags:
+      - Auth
+      summary: Confirm Password Reset
+      description: Confirm a password reset using the 3-digit code.
+      operationId: confirm_password_reset_api_v1_auth_reset_confirm_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetConfirm'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts:
+    get:
+      tags:
+      - Accounts
+      summary: List Accounts
+      description: 'List all accounts owned by the authenticated user.
+
+
+        Returns full account objects including sensitive fields.'
+      operationId: list_accounts_api_v1_accounts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AccountOut'
+                type: array
+                title: Response List Accounts Api V1 Accounts Get
+      security:
+      - HTTPBearer: []
+  /api/v1/accounts/{account_id}:
+    get:
+      tags:
+      - Accounts
+      summary: Get Account
+      description: Retrieve a single account by ID.
+      operationId: get_account_api_v1_accounts__account_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Account Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Accounts
+      summary: Update Account
+      description: Update an account's attributes.
+      operationId: update_account_api_v1_accounts__account_id__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Account Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/accounts/{account_id}/transactions:
+    get:
+      tags:
+      - Accounts
+      summary: List Transactions
+      description: List all transactions for an account.
+      operationId: list_transactions_api_v1_accounts__account_id__transactions_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Account Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionOut'
+                title: Response List Transactions Api V1 Accounts  Account Id  Transactions
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/payments:
+    post:
+      tags:
+      - Payments
+      summary: Create Payment
+      description: Initiate a payment (transfer) between two accounts.
+      operationId: create_payment_api_v1_payments_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/payments/{payment_id}:
+    get:
+      tags:
+      - Payments
+      summary: Get Payment
+      description: Retrieve a payment by ID.
+      operationId: get_payment_api_v1_payments__payment_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: payment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Payment Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/accounts:
+    get:
+      tags:
+      - Admin
+      summary: Admin List Accounts
+      description: List all accounts across all users. Intended for admin use only.
+      operationId: admin_list_accounts_api_v1_admin_accounts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AdminAccountOut'
+                type: array
+                title: Response Admin List Accounts Api V1 Admin Accounts Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/users:
+    get:
+      tags:
+      - Admin
+      summary: Admin List Users
+      description: 'List all users including hashed passwords. Properly protected
+        with require_admin.
+
+        This is the payoff for the privilege escalation attack: only accessible after
+
+        promoting yourself to admin via PUT /profile {"role": "admin"} and re-logging
+        in.'
+      operationId: admin_list_users_api_v1_admin_users_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AdminUserOut'
+                type: array
+                title: Response Admin List Users Api V1 Admin Users Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/stats:
+    get:
+      tags:
+      - Admin
+      summary: Admin Stats
+      description: API usage statistics from request logs.
+      operationId: admin_stats_api_v1_admin_stats_get
+      parameters:
+      - name: X-Analytics-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          title: X-Analytics-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/reset:
+    post:
+      tags:
+      - Admin
+      summary: Reset Database
+      description: "Drop and recreate all tables, then reseed with demo data.\nOpen\
+        \ to anyone \u2014 this is a classroom utility, not a real admin action."
+      operationId: reset_database_api_v1_admin_reset_post
+      parameters:
+      - name: X-Reset-Secret
+        in: header
+        required: false
+        schema:
+          type: string
+          title: X-Reset-Secret
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/health:
+    get:
+      tags:
+      - System
+      summary: Health Check
+      description: "Health check endpoint \u2014 no authentication required."
+      operationId: health_check_api_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/profile:
+    get:
+      tags:
+      - Profile
+      summary: Get Profile
+      description: Get the authenticated user's profile.
+      operationId: get_profile_api_v1_profile_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileOut'
+      security:
+      - HTTPBearer: []
+    put:
+      tags:
+      - Profile
+      summary: Update Profile
+      description: Update the authenticated user's profile.
+      operationId: update_profile_api_v1_profile_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+components:
+  schemas:
+    AccountOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        owner_id:
+          type: integer
+          title: Owner Id
+        account_type:
+          type: string
+          title: Account Type
+        account_number:
+          type: string
+          title: Account Number
+        routing_number:
+          type: string
+          title: Routing Number
+        balance:
+          type: string
+          title: Balance
+        credit_limit:
+          type: string
+          title: Credit Limit
+        account_status:
+          type: string
+          title: Account Status
+        ssn_last4:
+          type: string
+          title: Ssn Last4
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - owner_id
+      - account_type
+      - account_number
+      - routing_number
+      - balance
+      - credit_limit
+      - account_status
+      - ssn_last4
+      - created_at
+      title: AccountOut
+    AccountUpdate:
+      properties:
+        balance:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Balance
+        credit_limit:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Credit Limit
+        account_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Account Status
+        account_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Account Type
+      type: object
+      title: AccountUpdate
+      description: "Update schema for accounts \u2014 accepts any field the client\
+        \ sends."
+    AdminAccountOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        owner_id:
+          type: integer
+          title: Owner Id
+        account_type:
+          type: string
+          title: Account Type
+        account_number:
+          type: string
+          title: Account Number
+        routing_number:
+          type: string
+          title: Routing Number
+        balance:
+          type: string
+          title: Balance
+        credit_limit:
+          type: string
+          title: Credit Limit
+        account_status:
+          type: string
+          title: Account Status
+        ssn_last4:
+          type: string
+          title: Ssn Last4
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        owner_email:
+          type: string
+          title: Owner Email
+          default: ''
+      type: object
+      required:
+      - id
+      - owner_id
+      - account_type
+      - account_number
+      - routing_number
+      - balance
+      - credit_limit
+      - account_status
+      - ssn_last4
+      - created_at
+      title: AdminAccountOut
+    AdminUserOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        email:
+          type: string
+          title: Email
+        full_name:
+          type: string
+          title: Full Name
+        role:
+          type: string
+          title: Role
+        hashed_password:
+          type: string
+          title: Hashed Password
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - email
+      - full_name
+      - role
+      - hashed_password
+      - created_at
+      title: AdminUserOut
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    PaymentOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        from_account_id:
+          type: integer
+          title: From Account Id
+        to_account_id:
+          type: integer
+          title: To Account Id
+        amount:
+          type: string
+          title: Amount
+        initiated_by:
+          type: integer
+          title: Initiated By
+        status:
+          type: string
+          title: Status
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - from_account_id
+      - to_account_id
+      - amount
+      - initiated_by
+      - status
+      - note
+      - created_at
+      title: PaymentOut
+    PaymentRequest:
+      properties:
+        from_account_id:
+          type: integer
+          title: From Account Id
+        to_account_id:
+          type: integer
+          title: To Account Id
+        amount:
+          anyOf:
+          - type: number
+          - type: string
+          title: Amount
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - from_account_id
+      - to_account_id
+      - amount
+      title: PaymentRequest
+    ProfileOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        email:
+          type: string
+          title: Email
+        full_name:
+          type: string
+          title: Full Name
+        role:
+          type: string
+          title: Role
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - email
+      - full_name
+      - role
+      - created_at
+      title: ProfileOut
+    ProfileUpdate:
+      properties:
+        full_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+      type: object
+      title: ProfileUpdate
+      description: "Update schema for user profile \u2014 accepts any field the client\
+        \ sends."
+    ResetConfirm:
+      properties:
+        email:
+          type: string
+          title: Email
+        code:
+          type: string
+          title: Code
+        new_password:
+          type: string
+          title: New Password
+      type: object
+      required:
+      - email
+      - code
+      - new_password
+      title: ResetConfirm
+    ResetRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+      type: object
+      required:
+      - email
+      title: ResetRequest
+    SignupRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+        password:
+          type: string
+          title: Password
+        full_name:
+          type: string
+          title: Full Name
+        ssn_last4:
+          type: string
+          title: Ssn Last4
+      type: object
+      required:
+      - email
+      - password
+      - full_name
+      - ssn_last4
+      title: SignupRequest
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+        expires_in:
+          type: integer
+          title: Expires In
+          default: 3600
+      type: object
+      required:
+      - access_token
+      title: TokenResponse
+    TransactionOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        account_id:
+          type: integer
+          title: Account Id
+        amount:
+          type: string
+          title: Amount
+        merchant:
+          type: string
+          title: Merchant
+        category:
+          type: string
+          title: Category
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        balance_after:
+          type: string
+          title: Balance After
+      type: object
+      required:
+      - id
+      - account_id
+      - amount
+      - merchant
+      - category
+      - timestamp
+      - balance_after
+      title: TransactionOut
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer
+

