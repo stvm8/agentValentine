@@ -1,7 +1,6 @@
 ---
 description: Force the agent to save its current state so you can /clear
 disable-model-invocation: true
-tags: [#bountyHunter]
 ---
 I am executing the `/save` command. 
 

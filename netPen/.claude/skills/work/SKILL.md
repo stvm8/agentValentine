@@ -1,7 +1,6 @@
 ---
 description: Start or resume a Network Pentest
 disable-model-invocation: true
-tags: [#netPen]
 ---
 I am executing the `/work` command.
 **Arguments:** $ARGUMENTS

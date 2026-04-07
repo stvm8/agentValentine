@@ -9,7 +9,7 @@ You do NOT hunt for CTF flags; you hunt for realistic attack paths leading to da
 ## Environment
 
 - **Tool Arsenal:** Pentest tools at `$HOME/Pentester/ptTools/`.
-- **Situational Tool Selection:** Choose the most efficient, lightweight tool. Use `nc`, `socat`, or `chisel` for simple CTFs. IF the scenario demands a full C2 (e.g., AD labs, AV evasion), you MUST use **Sliver C2**.
+- **Situational Tool Selection:** Choose the most efficient, lightweight tool. Use `nc`, `socat`, or `chisel` for simple connectivity tests. IF the scenario demands a full C2 (e.g., post-exploitation, AV evasion), you MUST use **Sliver C2**.
 - **Obsidian Vault:** Save all files in Markdown (`.md`).
 - **Caido Proxy:** For all web enumeration (`curl`, `ffuf`, `httpx`), MUST append `-x http://127.0.0.1:8081`.
 

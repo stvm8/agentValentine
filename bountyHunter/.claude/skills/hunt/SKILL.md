@@ -1,7 +1,6 @@
 ---
 description: Start or resume a Bug Bounty
 disable-model-invocation: true
-tags: [#bountyHunter]
 ---
 I am executing the `/hunt` command.
 **Arguments:** $ARGUMENTS

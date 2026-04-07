@@ -1,7 +1,6 @@
 ---
 description: Start or resume a CTF
 disable-model-invocation: true
-tags: [#ctfPlayer]
 ---
 I am executing the `/solve` command.
 **Arguments:** $ARGUMENTS
