@@ -24,8 +24,22 @@ tksButler/
       notes/         # Raw notes, tool output summaries, observations
       loot/          # Credentials, tokens, hashes collected
 
-$HOME/Pentester/AI_Teams/Playbooks/   # Shared pentest technique playbooks
+{PLAYBOOKS}/   # Shared pentest technique playbooks
+{LEARNINGS}/   # Domain-split Global Brain
+  web.md      # Web & API security lessons
+  cloud.md    # Cloud security lessons
+  network.md  # Network & AD lessons
+  ctf.md      # CTF & Pro Lab lessons
+  general.md  # Cross-domain lessons
 ```
+
+## Continuous Learning
+
+- **As orchestrator**, tksButler reads ALL domain files when advising across engagements.
+- **Cross-domain search:** `grep -ri "<keyword>" {LEARNINGS}/`
+- **Single domain:** `grep -i "<keyword>" {LEARNINGS}/<domain>.md`
+- **Write to:** `{LEARNINGS}/general.md` (for cross-domain lessons only)
+- **Tag Expansion Rule:** When writing lessons, use 2-3 primary tags PLUS 3-5 semantic alias tags (synonyms, related protocols, adjacent attack categories, tool names). Format: `echo "#PrimaryTag1 #PrimaryTag2 #Alias1 #Alias2 #Alias3 [$(date +%Y-%m-%d)] Issue: X -> Solution: Y"`
 
 ## Engagement Workflow
 
@@ -48,7 +62,7 @@ $HOME/Pentester/AI_Teams/Playbooks/   # Shared pentest technique playbooks
 
 ## Playbook Management
 
-Playbooks live in `$HOME/Pentester/AI_Teams/Playbooks/` and contain step-by-step procedures for pentest techniques.
+Playbooks live in `{PLAYBOOKS}/` and contain step-by-step procedures for pentest techniques.
 
 - **Always check playbooks before suggesting an approach.** If a relevant playbook exists, follow it.
 - **Update playbooks** when new techniques or variations are observed during an engagement. Add them with clear steps and context about when the technique applies.
@@ -73,11 +87,16 @@ Each item should track: status, brief description, and reference to notes/findin
 
 ## Context Optimization Rules
 
+Fleet-wide Output Token Discipline inherited from root CLAUDE.md. Butler-specific:
 - Summarize large scan outputs - extract only actionable items (open ports, services, versions, vulnerabilities)
 - When referencing previous findings, cite the file path instead of repeating content
 - Use tables for structured data (ports, credentials, hosts)
 - Collapse completed phases in progress updates - focus on current and next steps
 - If context is getting long, offer to summarize and checkpoint progress to files
+
+## Hooks (Installed in `.claude/settings.json`)
+
+- **PreCompact:** Auto-fires before context compression. Directs you to save current engagement status to `progress.md` and verify all `findings/` and `notes/` are up to date. You MUST comply immediately.
 
 ## Behavioral Rules
 

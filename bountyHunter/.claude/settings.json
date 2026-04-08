@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "$HOME/Pentester/tksClaudeAgent/hooks/precompact_save.sh",
+        "timeout": 30
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "$HOME/Pentester/tksClaudeAgent/hooks/post_bash_strike.sh",
+        "timeout": 10
+      }]
+    }]
+  }
+}

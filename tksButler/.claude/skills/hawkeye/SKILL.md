@@ -18,7 +18,7 @@ Execute the following sequence:
 3. Create placeholder files: `progress.md`, `notes/recon_raw.md`, `findings/`, `loot/`.
 
 ## 2. Playbook Reference
-1. Search `$HOME/Pentester/AI_Teams/Playbooks/` for reconnaissance and enumeration playbooks relevant to the target type (network, web, cloud, AD, etc.).
+1. Search `{PLAYBOOKS}/` for reconnaissance and enumeration playbooks relevant to the target type (network, web, cloud, AD, etc.).
 2. List which playbooks will be followed. If no relevant playbook exists, note that to the user.
 
 ## 3. Recon Plan Proposal
@@ -54,7 +54,7 @@ Sort by complexity (easiest first), then by confidence (highest first).
 - Wait for user approval before executing ANY phase.
 - After each phase, summarize findings into `notes/` and update `progress.md`.
 - After all phases, compile the final attack vector table into `findings/attack_vectors.md`.
-- Update or create playbook entries in `$HOME/Pentester/AI_Teams/Playbooks/` if new techniques are observed.
+- Update or create playbook entries in `{PLAYBOOKS}/` if new techniques are observed.
 
 ## Rules
 - NEVER scan or touch out-of-scope targets.

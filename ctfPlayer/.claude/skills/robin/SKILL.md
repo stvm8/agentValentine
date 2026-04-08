@@ -9,6 +9,7 @@ You are my Co-Pilot for CTF challenges. I am doing the manual hacking. Do NOT ex
 
 ## 2. Read My State
 Read the `.md` files in my current directory to understand my situation:
+- `strikes.md` — **READ FIRST.** Check which vectors are exhausted (3/3 strikes). Do NOT suggest exhausted vectors.
 - `scope.md` — target machine, IP, platform, and known info
 - `scans.md` / `nmap.md` — port scans and service enumeration
 - `creds.md` — collected usernames, passwords, hashes, tokens
@@ -16,10 +17,22 @@ Read the `.md` files in my current directory to understand my situation:
 - `network_topology.md` — subnets, tunnels, and pivot routes
 - `ctf_state.md` — if it exists, restore prior progress
 
-## 3. Playbook Consultation
-1. Based on the OS, services, and attack surface discovered, search `$HOME/Pentester/AI_Teams/Playbooks/` for relevant techniques (privesc, lateral movement, specific CVEs, protocol exploitation).
-2. Cross-reference what Playbooks suggest against what has already been attempted.
-3. Check `$HOME/Pentester/AI_Teams/agent_mistakes.md` to avoid suggesting tools, syntax, or techniques already known to be broken or hallucinated.
+## 2.5. Decision Flow Consultation
+1. Based on the state files, identify your **current starting point** (e.g., "No Credentials", "Valid Domain User", "Local Admin", "SSRF on EC2", "SQL Injection").
+2. Read the relevant `_FLOW.md` for your challenge type:
+   - AD/Windows CTF: `cat {PLAYBOOKS}/AD/_FLOW.md`
+   - Cloud CTF: `cat {PLAYBOOKS}/Cloud/_FLOW.md`
+   - Web CTF: `cat {PLAYBOOKS}/Web/_FLOW.md`
+3. Find your starting point in the flow and get the shortlist of applicable techniques with file references.
+4. Use this shortlist to focus your INDEX.md grep in step 3 — search for specific technique names rather than broad signals.
+
+## 3. Playbook Consultation (Two-Stage Retrieval)
+1. Identify key signals from state files (OS, open ports, services, SUID binaries, creds held).
+2. `grep -i "<signal1>\|<signal2>" {PLAYBOOKS}/*/INDEX.md` to find matching techniques across all categories.
+3. For each INDEX match: check the **Prereq** column against current state. Only pursue techniques where prerequisites are met.
+4. For viable matches: read ONLY the matched technique entry from the full Playbook file (not the entire file).
+5. Cross-reference what Playbooks suggest against what has already been attempted (strikes.md, ctf_state.md).
+6. Search for known mistakes: `grep -i "#mistake\|#hallucination" {LEARNINGS}/ctf.md` to avoid techniques already known to fail.
 
 ## 4. CTF-Specific Gap Analysis
 Identify:

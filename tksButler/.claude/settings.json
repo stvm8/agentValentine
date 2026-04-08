@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "$HOME/Pentester/tksClaudeAgent/hooks/precompact_save.sh",
+        "timeout": 30
+      }]
+    }]
+  }
+}

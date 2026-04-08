@@ -20,10 +20,11 @@ Execute the following sequence:
 3. If a `focus:` argument is provided, prioritize that area in the analysis.
 
 ## 2. Playbook Consultation
-1. Based on the current engagement phase and technologies discovered, search `$HOME/Pentester/AI_Teams/Playbooks/` for relevant techniques.
+1. Based on the current engagement phase and technologies discovered, search `{PLAYBOOKS}/` for relevant techniques.
 2. Cross-reference what playbooks suggest against what has already been attempted (from `progress.md`).
 3. Identify playbook steps that have NOT been tried yet.
-4. Check `$HOME/Pentester/AI_Teams/agent_mistakes.md` to avoid suggesting tools, syntax, or techniques already known to be broken or hallucinated.
+4. Search the Global Brain across all domains: `grep -ri "<keyword>" {LEARNINGS}/` for relevant past lessons.
+5. Search for known mistakes and hallucinations across all domains: `grep -ri "#mistake\|#hallucination" {LEARNINGS}/` to avoid suggesting techniques already known to fail.
 
 ## 3. Gap Analysis
 Identify:
@@ -68,7 +69,7 @@ Flag any choices that need user input (e.g., "noisy scan vs. stealth", "try cred
 
 ## 6. After User Decision
 - Once the user picks an action, update `progress.md` to mark it as in-progress.
-- If new techniques are discovered during execution, update the relevant playbook in `$HOME/Pentester/AI_Teams/Playbooks/`.
+- If new techniques are discovered during execution, update the relevant playbook in `{PLAYBOOKS}/`.
 - After action completes, update `progress.md` with results and re-run the analysis loop if instructed.
 
 ## Rules

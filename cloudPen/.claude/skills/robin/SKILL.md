@@ -9,6 +9,7 @@ You are my Co-Pilot for cloud penetration testing. I am doing the manual hacking
 
 ## 2. Read My State
 Read the `.md` files in my current directory to understand my situation:
+- `strikes.md` — **READ FIRST.** Check which vectors are exhausted (3/3 strikes). Do NOT suggest exhausted vectors.
 - `scope.md` — target cloud environment, accounts, and boundaries
 - `assets.md` — discovered S3 buckets, EC2s, Lambdas, Azure Blobs, etc.
 - `iam_enum.md` — users, roles, policies, cross-account trusts
@@ -16,10 +17,19 @@ Read the `.md` files in my current directory to understand my situation:
 - `vulnerabilities.md` — confirmed findings
 - `pentest_state.md` — if it exists, restore prior progress
 
-## 3. Playbook Consultation
-1. Based on the cloud provider and services discovered, search `$HOME/Pentester/AI_Teams/Playbooks/` for relevant techniques (IAM escalation, metadata abuse, cross-account pivots, serverless exploitation).
-2. Cross-reference what Playbooks suggest against what has already been attempted.
-3. Check `$HOME/Pentester/AI_Teams/agent_mistakes.md` to avoid suggesting tools, syntax, or techniques already known to be broken or hallucinated.
+## 2.5. Decision Flow Consultation
+1. Based on the state files, identify your **current starting point** (e.g., "Unauthenticated", "SSRF on EC2", "Low-Privilege IAM User", "IAM Escalation Paths", "Lambda Access").
+2. Read: `cat {PLAYBOOKS}/Cloud/_FLOW.md`
+3. Find your starting point in the flow and get the shortlist of applicable techniques with file references.
+4. Use this shortlist to focus your INDEX.md grep in step 3 — search for specific technique names rather than broad signals.
+
+## 3. Playbook Consultation (Two-Stage Retrieval)
+1. Identify key signals from state files (cloud provider, services, IAM roles, permissions, metadata endpoints).
+2. `grep -i "<signal1>\|<signal2>" {PLAYBOOKS}/Cloud/INDEX.md` to find matching techniques.
+3. For each INDEX match: check the **Prereq** column against current state. Only pursue techniques where prerequisites are met.
+4. For viable matches: read ONLY the matched technique entry from the full Playbook file (not the entire file).
+5. Cross-reference what Playbooks suggest against what has already been attempted (strikes.md, pentest_state.md).
+6. Search for known mistakes: `grep -i "#mistake\|#hallucination" {LEARNINGS}/cloud.md` to avoid techniques already known to fail.
 
 ## 4. Cloud-Specific Gap Analysis
 Identify:

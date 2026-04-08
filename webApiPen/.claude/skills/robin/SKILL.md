@@ -9,6 +9,7 @@ You are my Co-Pilot for web application and API penetration testing. I am doing 
 
 ## 2. Read My State
 Read the `.md` files in my current directory to understand my situation:
+- `strikes.md` — **READ FIRST.** Check which vectors are exhausted (3/3 strikes). Do NOT suggest exhausted vectors.
 - `scope.md` — target URLs, auth boundaries, out-of-scope items
 - `recon.md` — tech stack, server headers, WAF fingerprint, JS-extracted endpoints
 - `endpoints.md` — discovered URLs, HTTP methods, parameters, auth requirements
@@ -18,10 +19,22 @@ Read the `.md` files in my current directory to understand my situation:
 - `scans.md` — filtered tool outputs (nuclei, sqlmap, dalfox)
 - `pentest_state.md` — if it exists, restore prior progress
 
-## 3. Playbook Consultation
-1. Based on the tech stack, frameworks, and API types discovered, search `$HOME/Pentester/AI_Teams/Playbooks/` for relevant techniques (injection bypasses, auth flaws, BOLA patterns, SSRF chains).
-2. Cross-reference what Playbooks suggest against what has already been attempted.
-3. Check `$HOME/Pentester/AI_Teams/agent_mistakes.md` to avoid suggesting tools, syntax, or techniques already known to be broken or hallucinated.
+## 2.5. Decision Flow Consultation
+1. Based on the state files, identify your **current starting point** (e.g., "Black-Box", "Unauthenticated Endpoints", "Authenticated User", "SQL Injection Confirmed").
+2. Read: `cat {PLAYBOOKS}/Web/_FLOW.md`
+3. Find your starting point in the flow and get the shortlist of applicable techniques with file references.
+4. Use this shortlist to focus your INDEX.md grep in step 3 — search for specific technique names rather than broad signals.
+
+## 3. Playbook Consultation (Two-Stage Retrieval)
+1. Identify key signals from state files (tech stack, frameworks, API types, auth mechanisms, input vectors).
+2. `grep -i "<signal1>\|<signal2>" {PLAYBOOKS}/Web/INDEX.md` to find matching techniques.
+3. For each INDEX match: check the **Prereq** column against current state. Only pursue techniques where prerequisites are met.
+4. For viable matches: read ONLY the matched technique entry from the full Playbook file (not the entire file).
+5. Cross-reference what Playbooks suggest against what has already been attempted (strikes.md, pentest_state.md).
+6. Search for known mistakes: `grep -i "#mistake\|#hallucination" {LEARNINGS}/web.md` to avoid techniques already known to fail.
+
+## 3.5. Load OWASP Reference
+Read `_references/owasp_checklist.md` to have the full OWASP Web Top 10 + API Top 10 categories available for gap analysis.
 
 ## 4. Web/API-Specific Gap Analysis
 Identify:

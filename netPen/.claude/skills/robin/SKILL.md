@@ -9,6 +9,7 @@ You are my Co-Pilot for enterprise network penetration testing. I am doing the m
 
 ## 2. Read My State
 Read the `.md` files in my current directory to understand my situation:
+- `strikes.md` — **READ FIRST.** Check which vectors are exhausted (3/3 strikes). Do NOT suggest exhausted vectors.
 - `scope.md` — target networks, domains, and rules of engagement
 - `scans.md` — port scans, service fingerprinting results
 - `ad_enum.md` — AD users, groups, SPNs, domain trusts, GPOs
@@ -18,10 +19,20 @@ Read the `.md` files in my current directory to understand my situation:
 - `vulnerabilities.md` — confirmed findings
 - `pentest_state.md` — if it exists, restore prior progress
 
-## 3. Playbook Consultation
-1. Based on the network topology, AD structure, and services discovered, search `$HOME/Pentester/AI_Teams/Playbooks/` for relevant techniques (Kerberoasting, relay attacks, trust abuse, DACL exploitation, GPO abuse).
-2. Cross-reference what Playbooks suggest against what has already been attempted.
-3. Check `$HOME/Pentester/AI_Teams/agent_mistakes.md` to avoid suggesting tools, syntax, or techniques already known to be broken or hallucinated.
+## 2.5. Decision Flow Consultation
+1. Based on the state files, identify your **current starting point** (e.g., "No Credentials", "Valid Domain User", "NTLM Hash", "Local Admin on Host", "Domain Admin Achieved").
+2. Read the relevant `_FLOW.md`: `cat {PLAYBOOKS}/AD/_FLOW.md`
+   - Also check `{PLAYBOOKS}/Pivoting/_FLOW.md` and `{PLAYBOOKS}/Windows/_FLOW.md` if they exist.
+3. Find your starting point in the flow and get the shortlist of applicable techniques with file references.
+4. Use this shortlist to focus your INDEX.md grep in step 3 — search for specific technique names rather than broad signals.
+
+## 3. Playbook Consultation (Two-Stage Retrieval)
+1. Identify key signals from state files (open ports, services, AD objects, credentials held).
+2. `grep -i "<signal1>\|<signal2>" {PLAYBOOKS}/AD/INDEX.md {PLAYBOOKS}/Windows/INDEX.md {PLAYBOOKS}/Pivoting/INDEX.md {PLAYBOOKS}/C2/INDEX.md` to find matching techniques.
+3. For each INDEX match: check the **Prereq** column against current state. Only pursue techniques where prerequisites are met.
+4. For viable matches: read ONLY the matched technique entry from the full Playbook file (not the entire file).
+5. Cross-reference what Playbooks suggest against what has already been attempted (strikes.md, pentest_state.md).
+6. Search for known mistakes: `grep -i "#mistake\|#hallucination" {LEARNINGS}/network.md` to avoid techniques already known to fail.
 
 ## 4. Network/AD-Specific Gap Analysis
 Identify:

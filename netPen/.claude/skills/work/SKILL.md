@@ -10,13 +10,15 @@ Evaluate the arguments and execute the corresponding sequence below:
 ## Syntax 1: New Pentest
 If arguments contain client/project/scope:
 1. **Workspace:** Run `mkdir -p <client>/<project> && cd <client>/<project>`.
-2. **Scope Validation:** Create `scope.md` with ROE. Create placeholders: `scans.md`, `creds.md`, `network_topology.md`, `vulnerabilities.md`.
-3. **Global Brain Sync:** Run `grep -i "<core_tech>" $HOME/Pentester/AI_Teams/agent_learnings.md`.
-4. **Execution:** Output the first `[⚡ PROPOSAL]` for stealthy reconnaissance.
+2. **Scope Validation:** Create `scope.md` with ROE. Create placeholders: `scans.md`, `creds.md`, `network_topology.md`, `vulnerabilities.md`, `strikes.md`.
+3. **Global Brain Sync:** Run `grep -i "<core_tech>" {LEARNINGS}/network.md {LEARNINGS}/general.md`.
+4. **Playbook Sync:** `grep -i "<core_tech>" {PLAYBOOKS}/AD/INDEX.md {PLAYBOOKS}/Windows/INDEX.md {PLAYBOOKS}/Pivoting/INDEX.md` to retrieve relevant techniques.
+5. **Execution:** Output the first `[⚡ PROPOSAL]` for stealthy reconnaissance.
 
 ## Syntax 2: Resume Pentest
 If arguments contain 'continue:':
 1. **Locate & Navigate:** Find the `<project>` directory and `cd` into it.
 2. **State Restoration:** Read `pentest_state.md`, `network_topology.md`, and enum files to rebuild the routing map.
-3. **Global Brain Sync:** Dynamically `grep` the learnings file for evasion tactics.
-4. **Resume:** Output a `[⚡ PROPOSAL]` to continue lateral movement.
+3. **Global Brain Sync:** Dynamically `grep -i "<keyword>" {LEARNINGS}/network.md {LEARNINGS}/general.md` for evasion tactics.
+4. **Playbook Sync:** `grep -i "<keyword>" {PLAYBOOKS}/AD/INDEX.md {PLAYBOOKS}/Windows/INDEX.md` for relevant techniques.
+5. **Resume:** Output a `[⚡ PROPOSAL]` to continue lateral movement.
