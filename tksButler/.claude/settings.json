@@ -1,7 +1,7 @@
 {
   "hooks": {
     "PreCompact": [{
-      "matcher": "",
+      "matcher": "Bash",
       "hooks": [{
         "type": "command",
         "command": "$HOME/Pentester/tksClaudeAgent/hooks/precompact_save.sh",
