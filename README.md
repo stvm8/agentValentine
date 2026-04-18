@@ -4,7 +4,6 @@ created: 2026-04-05
 modified: 2026-04-08
 type: note
 ---
-
 # AI Pentest Teams: Master Architecture
 
 A highly optimized, token-efficient, and compartmentalized AI Pentesting framework powered by the Claude Code CLI.

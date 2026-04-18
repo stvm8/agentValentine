@@ -1,19 +1,14 @@
 # TKS Fleet Configuration
-
 This file is auto-inherited by all agents in subdirectories. Keep it lean — every token here is loaded on every turn for every agent.
-
 ## Fleet Paths (Single Source of Truth)
-
 When you see `{PLAYBOOKS}`, `{LEARNINGS}`, or `{TOOLS}` in agent configs or skills, expand to these paths in all generated bash commands:
 
-| Reference | Path |
-|---|---|
-| `{PLAYBOOKS}` | `$HOME/Pentester/tksClaudeAgent/Playbooks` |
-| `{LEARNINGS}` | `$HOME/Pentester/tksClaudeAgent/learnings` |
-| `{TOOLS}` | `$HOME/Pentester/ptTools` |
-
+| Reference     | Path                                                   |
+| ------------- | ------------------------------------------------------ |
+| `{PLAYBOOKS}` | `/opt/Pentester/tksClaudeAgent_dev/Playbooks` |
+| `{LEARNINGS}` | `/opt/Pentester/tksClaudeAgent_dev/learnings` |
+| `{TOOLS}`     | `/opt`                      |
 To move the fleet to a different system, update ONLY this table.
-
 ## Agent-to-Playbook Mapping
 
 | Agent | Primary Playbook Dirs | Learnings File |
@@ -24,21 +19,15 @@ To move the fleet to a different system, update ONLY this table.
 | cloudPen | Cloud/ | cloud.md |
 | ctfPlayer | ALL (cross-domain) | ctf.md |
 | tksButler | ALL (orchestrator) | general.md |
-
 ## Reactive Playbook Lookup (Proposal Loop Integration)
-
 When you discover new services, ports, technologies, or attack paths during an engagement:
-
 1. Identify signals (e.g., port 88 → Kerberos, port 445 + signing disabled → relay, JWT in response → token attacks)
 2. `grep -i "<signal>" {PLAYBOOKS}/<relevant_category>/INDEX.md`
 3. For matching techniques, check the **Prereq** column — do you have what's needed?
 4. If prerequisites are met, read ONLY the matched technique from the full Playbook file
 5. Factor the technique into your Threat Model and Proposal — cite the Playbook source
-
 This lookup is part of the Proposal Loop. Do it EVERY time you observe something new, not just during /robin.
-
 ## Playbook Entry Format
-
 Every Playbook technique entry MUST follow this structure (enforced by `/absorb`):
 
 ```
@@ -51,11 +40,8 @@ Every Playbook technique entry MUST follow this structure (enforced by `/absorb`
 - **Context:** <when/why to use this>
 - **Payload/Method:** <commands>
 ```
-
 ## Output Token Discipline
-
 Every character an agent outputs costs output tokens. ALL agents MUST minimize unnecessary output:
-
 - **Never print file diffs, full file contents, or line-by-line change summaries.** The changes are on disk — the user can read them.
 - **Never echo back what was added or removed.** Just confirm the action: "Updated X" or "Done."
 - **Never restate the user's request** before acting on it.
@@ -63,9 +49,7 @@ Every character an agent outputs costs output tokens. ALL agents MUST minimize u
 - **Tool output:** Always pipe large outputs to disk (`> file.md`), then `grep` for relevant lines. Never dump raw tool output into context.
 - **Proposals:** The Threat Model + Proposal format is already concise. Do not add preamble, disclaimers, or trailing summaries.
 - **Reporting:** Switch to Haiku for report generation (already in protocol — enforce it).
-
 ## Anti-Rabbit-Hole Protocol (CRITICAL — ENFORCED ACROSS MODEL SWITCHES)
-
 - **Strike Log File:** ALL strikes MUST be tracked in `strikes.md` in the current engagement directory. This file persists across `/clear` and model switches. Before EVERY proposal, read `strikes.md` to check current strike counts.
 - **Strict 3-Strike Rule:** A "strike" applies to the *logical vector*, not the exact syntax. Tweaking a payload, changing a compiler flag, or swapping an encoding method does NOT reset the strike counter. 3 failures on the same logical path = STOP.
 - **On Every Failed Attempt:** Immediately append to `strikes.md`:
@@ -74,9 +58,7 @@ Every character an agent outputs costs output tokens. ALL agents MUST minimize u
   ```
 - **On 3rd Strike:** Output `[STUCK] Vector exhausted. Reason: <Brief explanation>. See strikes.md for full history.` and move to the next vector or ask for a hint.
 - **Environmental Awareness:** If the task requires Windows-only compilers, GUI interaction, or heavy browser rendering that CLI cannot provide, do NOT attempt workarounds. STOP immediately and ask the user.
-
 ## Execution Philosophy
-
 - **ANTI-AUTONOMY PROTOCOL (CRITICAL):** You are strictly forbidden from acting autonomously. You must break Claude Code's default behavior of chaining tool calls.
 - **The 1-Turn-1-Action Rule:** You must NEVER propose a task and execute the bash tool in the same conversational turn.
 - **The Proposal Loop:**
@@ -94,9 +76,7 @@ Every character an agent outputs costs output tokens. ALL agents MUST minimize u
   [HALTING. AWAITING USER APPROVAL.]
   ```
   If Strike Check shows 3/3, you MUST NOT propose this vector. Move to next vector or output [STUCK].
-
 ## Continuous Learning
-
 - **The Global Brain:** Log persistent failures, bypasses, and syntax corrections to your domain file. Each agent specifies its write-to and read paths in its own CLAUDE.md.
 - **Dynamic Tagging Format:** When appending a lesson, use 2-3 primary tags PLUS 3-5 semantic alias tags (synonyms, related protocols, adjacent attack categories, tool names). This ensures `grep` catches semantically related entries.
   - Format: `echo "#PrimaryTag1 #PrimaryTag2 #Alias1 #Alias2 #Alias3 [$(date +%Y-%m-%d)] Issue: X -> Solution: Y" >> {LEARNINGS}/<domain>.md`
@@ -104,9 +84,7 @@ Every character an agent outputs costs output tokens. ALL agents MUST minimize u
 - **Contextual Retrieval:** NEVER `cat` the entire file. Use `grep -i` with dynamic keywords.
   - Single domain: `grep -i "<keyword>" {LEARNINGS}/<domain>.md`
   - Cross-domain: `grep -ri "<keyword>" {LEARNINGS}/`
-
 ## Reporting Protocol
-
 - When a vulnerability or objective is achieved, you MUST NOT generate the report automatically.
 - Instead, propose it so the user can attempt further chaining or switch to a cheaper/faster model (like Haiku) for writing.
 - **Lesson Extraction Rules:**

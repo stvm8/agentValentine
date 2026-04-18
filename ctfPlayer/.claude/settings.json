@@ -4,7 +4,7 @@
       "matcher": "Bash",
       "hooks": [{
         "type": "command",
-        "command": "/home/takashi/Pentester/tksClaudeAgent_dev/hooks/precompact_save.sh",
+        "command": "/opt/Pentester/tksClaudeAgent_dev/hooks/precompact_save.sh",
         "timeout": 30
       }]
     }],
@@ -12,7 +12,7 @@
       "matcher": "Bash",
       "hooks": [{
         "type": "command",
-        "command": "/home/takashi/Pentester/tksClaudeAgent_dev/hooks/post_bash_strike.sh",
+        "command": "/opt/Pentester/tksClaudeAgent_dev/hooks/post_bash_strike.sh",
         "timeout": 10
       }]
     }]
