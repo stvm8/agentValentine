@@ -5,8 +5,8 @@ When you see `{PLAYBOOKS}`, `{LEARNINGS}`, or `{TOOLS}` in agent configs or skil
 
 | Reference     | Path                                                   |
 | ------------- | ------------------------------------------------------ |
-| `{PLAYBOOKS}` | `/opt/Pentester/tksClaudeAgent_dev/Playbooks` |
-| `{LEARNINGS}` | `/opt/Pentester/tksClaudeAgent_dev/learnings` |
+| `{PLAYBOOKS}` | `/path/to/Playbooks` |
+| `{LEARNINGS}` | `/path/to/learnings` |
 | `{TOOLS}`     | `/opt`                      |
 To move the fleet to a different system, update ONLY this table.
 ## Agent-to-Playbook Mapping
