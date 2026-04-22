@@ -26,103 +26,19 @@ Read `scope.md` to determine `Type:`:
 - **Real engagement (webapp/api/network/cloud):** Full report with business impact and remediation.
 
 ## 3. Generate Report
-Create `report.md` in the engagement directory.
+Load the appropriate template from this skill's `references/` directory:
+- **CTF:** Read `references/ctf_template.md`
+- **Real engagement (webapp/api/network/cloud):** Read `references/pentest_template.md`
 
-### Report Structure for Real Engagements (webapp/api/network/cloud):
+Create `report.md` in the engagement directory by filling in every placeholder in the template with data from the state files. Do not alter the template's structure or section order. Replace all `[placeholder]` fields; remove any sections that have no data (e.g., no lateral movement phase for a straight privesc).
 
-```markdown
-# Penetration Test Report: <Client> - <Platform>
-**Date:** <date>
-**Type:** <type>
-**Scope:** <scope summary>
-**Objective:** <objective>
-
-## Executive Summary
-<2-3 sentences: what was tested, overall risk posture, critical findings count>
-
-## Findings
-
-### Finding <N>: <Vulnerability Name>
-**Severity:** Critical | High | Medium | Low | Informational
-**CVSS:** <score if applicable>
-
-**Classification:**
-- OWASP: <Web A01-A10 or API API1-API10> (for webapp/api engagements)
-- MITRE ATT&CK: <Tactic> / <Technique ID> - <Technique Name>
-- CWE: <CWE-ID> - <CWE Name>
-
-**Discovery:**
-<How this was found. What observation triggered the investigation. Be specific — name the tool, endpoint, or signal.>
-
-**Reasoning:**
-<Why this action was taken. What the tester expected based on the observation.>
-
-**Proof of Concept:**
-<Exact commands used with full flags, proxy settings, and authentication context. Must be copy-paste reproducible.>
-
-**Result:**
-<What happened. Include relevant HTTP responses, shell output, or evidence. Direct, no fluff.>
-
-**Business Impact:**
-<Real-world consequence: data exposure, account takeover, infrastructure compromise, compliance violation.>
-
-**Remediation:**
-<Specific, actionable fix. Code-level or config-level. Reference vendor docs or security standards.>
-
----
-<Repeat for each finding, sorted by severity descending>
-
-## Attack Chain Summary
-<If findings were chained, show the full path: Finding A -> Finding B -> Objective achieved>
-
-## Techniques Mapped
-| # | Technique | MITRE ATT&CK | OWASP | Finding Ref |
-|---|-----------|--------------|-------|-------------|
-
-## Appendix
-- Tools used with versions
-- Scan timestamps
-- Scope boundaries respected
-```
-
-### Report Structure for CTF:
-
-```markdown
-# Walkthrough: <Platform> - <Name>
-**Date:** <date>
-**Objective:** <flags, root, etc.>
-
-## Reconnaissance
-<What was discovered and how. Name tools, commands, key output.>
-
-## Exploitation Path
-
-### Step <N>: <Action Name>
-**Technique:** MITRE ATT&CK: <Tactic> / <Technique ID> - <Technique Name>
-
-**Discovery:**
-<How this vector was identified. What signal led here.>
-
-**Reasoning:**
-<Why this action was chosen over alternatives.>
-
-**Command:**
-<Exact command, copy-paste ready with full context.>
-
-**Result:**
-<Output and evidence. Direct.>
-
----
-<Repeat for each step in the kill chain>
-
-## Flags
-- User: <flag>
-- Root: <flag>
-
-## Techniques Mapped
-| # | Technique | MITRE ATT&CK | Step Ref |
-|---|-----------|--------------|----------|
-```
+Additional field mappings not in the template:
+- **Classification block (pentest only):** Under each finding add:
+  - OWASP: `<Web A01-A10 or API API1-API10>` (webapp/api only)
+  - MITRE ATT&CK: `<Tactic> / <Technique ID> - <Technique Name>`
+  - CWE: `<CWE-ID> - <CWE Name>`
+- **Findings sort order (pentest only):** Critical → High → Medium → Low → Informational
+- **CTF flags:** Populate from `loot.md` if present; otherwise leave the intentional placeholder.
 
 ## 4. Lesson Extraction
 After generating the report, extract lessons for the Global Brain:
