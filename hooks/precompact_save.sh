@@ -1,28 +1,29 @@
 #!/bin/bash
-# PRECOMPACT AUTO-CHECKPOINT HOOK
-#
-# Fires before Claude Code compresses the context window.
-# Blocks the AI and tells it to checkpoint all state files
-# so reasoning context is preserved before compression.
-#
-# === INSTALL ===
-# Add to each agent's .claude/settings.local.json:
-#
-#   "hooks": {
-#     "PreCompact": [{
-#       "matcher": "",
-#       "hooks": [{
-#         "type": "command",
-#         "command": "/absolute/path/to/hooks/precompact_save.sh",
-#         "timeout": 30
-#       }]
-#     }]
-#   }
-#
+# PreCompact state checkpoint hook
+# Snapshots engagement files to disk before context compression.
+# Returns additionalContext to guide the compaction summary.
 
-cat << 'HOOKJSON'
-{
-  "decision": "block",
-  "reason": "EMERGENCY CHECKPOINT — Context is about to be compressed. You MUST immediately: (1) Save all current progress to your state file (hunt_state.md / ctf_state.md / pentest_state.md). (2) Append a Reasoning Log section documenting your current hypothesis, what you've ruled out, and planned next steps. (3) Ensure creds.md, scans.md, and all engagement files are up to date. (4) After saving, output: [!] PRE-COMPACT SAVE COMPLETE. Context may now compress safely."
-}
-HOOKJSON
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+SNAP_DIR=".snapshots/$TIMESTAMP"
+mkdir -p "$SNAP_DIR"
+
+KEY_FILES=(
+    scope.md creds.md vulnerabilities.md strikes.md scans.md progress.md
+    recon.md endpoints.md handoff.md loot.md attack_vectors.md
+    ad_enum.md network_topology.md api_schema.md assets.md iam_enum.md
+)
+
+saved=()
+for f in "${KEY_FILES[@]}"; do
+    src=$(find . -maxdepth 5 -name "$f" -not -path "./.snapshots/*" 2>/dev/null | head -1)
+    if [[ -n "$src" ]]; then
+        cp "$src" "$SNAP_DIR/"
+        saved+=("$f")
+    fi
+done
+
+files_list=$(IFS=', '; echo "${saved[*]}")
+[[ -z "$files_list" ]] && files_list="none"
+
+printf '{"hookSpecificOutput":{"hookEventName":"PreCompact","additionalContext":"[CHECKPOINT %s] Engagement files snapshotted to %s — saved: %s. When writing the compaction summary, preserve: active vector + strike counts, all credentials found, live sessions or tokens, and the next planned action."}}\n' \
+    "$TIMESTAMP" "$SNAP_DIR" "$files_list"
