@@ -1,5 +1,6 @@
 {
   "autoCompactWindow": 120000,
+  "viewMode": "focus",
   "hooks": {
     "PreCompact": [{
       "matcher": "",

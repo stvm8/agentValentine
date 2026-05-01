@@ -20,6 +20,16 @@ Parse the arguments for: `client:`, `platform:`.
    - `handoff.md` — original appraisal findings
    - Domain-specific: `endpoints.md`, `api_schema.md`, `ad_enum.md`, `network_topology.md`, `assets.md`, `iam_enum.md`, `loot.md`, `scans.md`
 
+## 1.5. Reconcile & Update State Files
+Cross-reference the conversation history against each state file. Update any file that is stale or incomplete before proceeding:
+- **progress.md:** Mark the engagement status as `COMPLETED`. Ensure ALL completed actions from the session are recorded under `## Completed`. Clear `## Next Actions` (replace with `NONE — engagement complete.`). Summarise the root/privesc path in `## Reasoning Log`.
+- **loot.md:** Confirm all captured flags, credentials, and sessions are recorded.
+- **creds.md:** Confirm all credentials discovered during the session are present.
+- **vulnerabilities.md:** Confirm all confirmed findings are recorded with reproduction steps.
+- **network_topology.md / ad_enum.md / assets.md** (if present): Confirm discovered hosts, shares, or cloud assets are recorded.
+
+Only update files that are actually stale. If a file is already current, skip it.
+
 ## 2. Detect Report Type
 Read `scope.md` to determine `Type:`:
 - **ctf:** Technical walkthrough. No business impact or remediation.

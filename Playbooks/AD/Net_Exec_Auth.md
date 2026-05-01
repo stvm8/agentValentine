@@ -113,3 +113,22 @@
 - **Opsec:** Low
 - **Context:** Run arbitrary WMI queries through nxc.
 - **Payload/Method:** `nxc smb <target> -u <u> -p <p> --wmi "SELECT * FROM Win32_Service WHERE State='Running'"`
+
+### Local Account Auth via WinRM (Drop Domain Prefix) [added: 2026-04]
+- **Tags:** #WinRM #LocalAccount #CredentialReuse #LateralMovement #EvilWinRM #LocalAdmin
+- **Trigger:** Domain user creds obtained; host has a local account with the same username and password (common with service/admin accounts recycling passwords)
+- **Prereq:** Plaintext password; local account on target with same credentials as domain account
+- **Yields:** WinRM shell as local administrator (Administrators group membership, not just domain user)
+- **Opsec:** Low
+- **Context:** When authenticating to WinRM with a domain prefix (`domain\user`), you get domain user privileges. Dropping the domain prefix forces local account authentication. If the password is reused and the local account is in the local Administrators group, this grants admin access even when the domain account is not a local admin. Check `net user <username>` to confirm local group membership before attempting.
+- **Payload/Method:**
+  ```bash
+  # Domain auth (limited privileges)
+  evil-winrm -i <IP> -u 'domain\user' -p 'Password'
+
+  # Local auth (may yield local admin if account exists locally with same password)
+  evil-winrm -i <IP> -u user -p 'Password'    # no domain prefix
+
+  # Verify local group membership first:
+  # net user <username>   → look for "Local Group Memberships  *Administrators"
+  ```

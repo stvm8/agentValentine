@@ -156,3 +156,97 @@
 | GuardDuty UA Evasion (Pacu/Boto3) | CloudTrail_Evasion.md | Pentest OS detection concern | Avoid Kali/Parrot detection |
 
 → **Next:** Stealth established → continue exploitation from [3] or [4].
+
+---
+# Cloud (Azure) Attack Decision Flow
+
+> Match your **current state** to a starting point below. Follow the techniques listed, then advance to the next starting point based on what you gain.
+
+## A1. Unauthenticated (External Recon)
+**Signal:** No Azure credentials; target domain or company name only
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| EntraID Tenant Discovery | Azure_Attacks.md | Target domain | Tenant ID + Managed/Federated status |
+| Azure Subdomain Enumeration (azsubenum) | Azure_Attacks.md | Company slug (NOT full domain) + permutations.txt | Storage accounts, App Services, SCM endpoints |
+| Anonymous Blob Enum via $web Static Site | Azure_Attacks.md | /$web/ URL pattern | Blob listing, downloadable artifacts with creds |
+
+→ **Next:** Tenant ID confirmed → [A2]. Blob creds found → [A3]. App Services discovered → browse for employee names → [A2].
+| Full chain: [[azure_blob_to_keyvault]] — Anonymous Blob Enum → Cred Zip Download → az CLI Auth → Key Vault ACL Bypass → Secrets Exfil |
+| Full chain: [[azure_recon_to_kudu_dbexfil]] — EntraID Recon → Subdomain Enum → Name Harvest → UPN Spray → az CLI Auth → Website Contributor → Kudu SCM Shell → DB Creds → SQL Exfil |
+
+---
+
+## A2. Initial Access (Credential Acquisition)
+**Signal:** Have employee names and/or a candidate password; no authenticated session yet
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| UPN Generation + Password Spray (oh365userfinder) | Azure_Attacks.md | Employee names + domain + candidate password | Valid UPN + password |
+| Anonymous Blob Artifact Download + Cred Extraction | Azure_Attacks.md | Blob listing from A1 with zip/script/config present | Hardcoded UPN, password, clientId, secret |
+
+→ **Next:** Valid UPN + password → [A3]. ClientId + secret found → [A5].
+
+---
+
+## A3. Low-Privilege Authenticated User
+**Signal:** Have valid UPN + password; `az login` succeeds
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| Azure AD UPN/SPN Harvesting | Azure_Attacks.md | Any authenticated az CLI session | Full UPN list + service principal inventory |
+| Resource Enumeration | Azure_Attacks.md | `az resource list` + `az role assignment list --all` | RBAC roles, resource types, high-value targets |
+| Key Vault ACL Bypass (AzureServices) | Azure_Attacks.md | Key Vault Secrets User RBAC + bypass=AzureServices | Plaintext secrets despite IP allowlist |
+| Storage Account Key Extraction | Azure_Attacks.md | `listkeys` permission on storage account | Full blob/queue/table read-write access |
+
+> **Note:** Use `az role assignment list --all` — not `--assignee` — to surface resource-scoped assignments.
+
+→ **Next:** Website Contributor found → [A4]. Key Vault secrets yield creds → re-enter [A3] or [A5] with new identity. `Microsoft.Authorization/roleAssignments/write` found → [A6].
+
+---
+
+## A4. App Service / Kudu Shell Access
+**Signal:** Compromised identity has `Website Contributor` (or higher) on an App Service
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| Kudu SCM Shell via Website Contributor | Azure_Attacks.md | Website Contributor RBAC + SCM endpoint reachable | Interactive shell; credential files in deployed scripts |
+| Managed Identity Token Theft via IMDS | Azure_Attacks.md | Shell on resource with managed identity assigned | Azure Bearer JWT for ARM/Key Vault/Graph |
+
+→ **Next:** DB creds found in scripts → query Azure SQL via `sqlcmd` in Kudu shell. Managed identity token obtained → enumerate identity's RBAC → re-enter [A3] with new token. Identity has `Microsoft.Authorization/roleAssignments/write` → [A6].
+
+---
+
+## A5. Service Principal / App Registration Abuse
+**Signal:** Found a clientId + secret/certificate in source code, env vars, Key Vault, or blob artifact
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| EntraID App Secret / Certificate Abuse | Azure_Attacks.md | clientId + secret (or PFX) + Tenant ID | OAuth2 token as service principal with inherited RBAC + Graph API permissions |
+
+→ **Next:** SP token obtained → enumerate SP's RBAC via ARM API → re-enter [A3]. SP has `Directory.ReadWrite.All` or `RoleManagement.ReadWrite.Directory` → full tenant compromise path. SP has `Microsoft.Authorization/roleAssignments/write` → [A6].
+
+---
+
+## A6. RBAC Privilege Escalation
+**Signal:** Compromised identity has `User Access Administrator` or a custom role with `Microsoft.Authorization/roleAssignments/write`
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| RBAC Escalation via User Access Administrator | Azure_Attacks.md | `roleAssignments/write` at subscription/RG/resource scope | Owner or Contributor on target scope |
+
+→ **Next:** Owner on subscription → full resource access → [A7].
+
+---
+
+## A7. Post-Exploitation (Owner / High-Privilege)
+**Signal:** Have Owner or Contributor role at subscription or resource group scope
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| Storage Account Key Extraction (all accounts) | Azure_Attacks.md | `listkeys` permission (Owner has it) | Full read-write to all storage in subscription |
+| Key Vault Full Secrets Dump | Azure_Attacks.md | Key Vault Secrets User/Administrator RBAC | All secrets, keys, and certificates in vault |
+| Managed Identity Token Theft via IMDS | Azure_Attacks.md | Shell on any VM/App Service with managed identity | Lateral movement tokens for adjacent resources |
+| Azure AD UPN/SPN Harvesting | Azure_Attacks.md | Authenticated session | Full directory enumeration for persistence targets |
+
+→ **Next:** Document all findings. Pivot using extracted secrets and tokens. Identify persistence opportunities (new app registration secret, new managed identity, new RBAC assignment).

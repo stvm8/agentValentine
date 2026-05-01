@@ -106,3 +106,44 @@
   # Kill all SSH tunnels
   pkill -f "ssh -[LRD].*-N"
   ```
+
+### sshuttle — Transparent VPN-like Tunnel via SSH [added: 2026-04]
+- **Tags:** #sshuttle #SSH #Pivoting #TransparentProxy #VPN #SubnetRouting #MultiSubnet
+- **Trigger:** SSH access to a pivot host with internal network access; want full transparent routing without proxychains overhead
+- **Prereq:** sshuttle on attacker (`sudo apt install sshuttle`); SSH creds/key for pivot host; Python3 on pivot host
+- **Yields:** All attacker traffic to target subnets transparently routed through pivot — no proxychains needed, nmap/cme/browser all work natively
+- **Opsec:** Low
+- **Context:** Unlike SSH SOCKS, sshuttle creates a real transparent VPN-like tunnel using iptables. Tools work natively without proxychains. Can route multiple subnets simultaneously (useful when pivoting through a DMZ host to reach both an internal AD network and a forest network).
+- **Payload/Method:**
+  ```bash
+  # Single subnet
+  sudo sshuttle -r <user>@<PIVOT_IP> <INTERNAL_CIDR> -v
+  # e.g.: sudo sshuttle -r riley@10.10.110.35 192.168.110.0/24
+
+  # Multiple subnets simultaneously (e.g., after discovering a second forest)
+  sudo sshuttle -r <user>@<PIVOT_IP> 192.168.110.0/24 192.168.210.0/24
+
+  # Then use tools directly — no proxychains prefix needed:
+  evil-winrm -i 192.168.110.52 -u user -p pass
+  cme winrm 192.168.110.52-56 -u user -p pass
+  ```
+
+### ARP Table for ICMP-Silent Hosts [added: 2026-04]
+- **Tags:** #ARP #HostDiscovery #Pivoting #InternalRecon #ICMPBlocked #PingSweep
+- **Trigger:** Ping sweep completed but some hosts are suspected to exist (e.g., firewall rules block ICMP); after getting foothold on an internal host
+- **Prereq:** Shell on an internal host; arp command available (Linux/Windows)
+- **Yields:** MAC addresses and IPs of hosts that have communicated on the local subnet but don't respond to ping — expands host list beyond ping sweep results
+- **Opsec:** Low
+- **Context:** Hosts with host-based firewalls blocking ICMP won't appear in ping sweeps but will appear in the ARP table if they've communicated on the L2 segment. Always run `arp` after a ping sweep to catch these. On Linux, filter out "incomplete" entries (unresolved MACs).
+- **Payload/Method:**
+  ```bash
+  # Linux — after ping sweep
+  arp | grep -v "incomplete"
+
+  # Windows
+  arp -a
+
+  # Combined: run ping sweep first to populate ARP cache, then check ARP
+  for i in {1..255}; do ping -c 1 192.168.110.$i > /dev/null; done
+  arp | grep -v "incomplete"
+  ```

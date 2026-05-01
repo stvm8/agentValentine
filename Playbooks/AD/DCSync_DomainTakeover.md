@@ -206,3 +206,22 @@
   winrs -r:<DC_FQDN> cmd
   ```
 - **Key insight:** Machine accounts (not just users) can hold DCSync rights. BloodHound's "GetChanges/GetChangesAll" edges on a computer node signal this path.
+
+### DCSync /history — Recover Old Cleartext Passwords [added: 2026-04]
+- **Tags:** #DCSync #PasswordHistory #CleartextPassword #Mimikatz #PrimaryCleared #CredentialHunting
+- **Trigger:** DCSync access obtained; standard NTLM hash doesn't crack; target user flagged as admin of a specific service (e.g., in BloodHound description field)
+- **Prereq:** DCSync rights (DA, domain replication, or constrained delegation to DC); Mimikatz on a Windows host with Kerberos ticket injected
+- **Yields:** Historical plaintext passwords stored in `Primary:CLEARTEXT` — appears when reversible encryption was enabled or password was set via LDAP with cleartext. Works even for accounts no longer using reversible encryption if it was set at any point.
+- **Opsec:** Med
+- **Context:** Some environments (or legacy configs) store passwords with reversible encryption. DCSync `/history` retrieves all historical password entries. The `Primary:CLEARTEXT` field will be populated if reversible encryption was ever enabled for the account. Especially useful for service accounts or admin accounts where the description field hints at a role (e.g., "Administrator of Web Server").
+- **Payload/Method:**
+  ```
+  # In mimikatz (requires active DC$ or DA ticket)
+  lsadump::dcsync /user:<domain>\<username> /history
+
+  # Look for:
+  # * Primary:CLEARTEXT *
+  # <plaintext_password>
+
+  # Then test on other systems (SSH, WinRM, etc.)
+  ```

