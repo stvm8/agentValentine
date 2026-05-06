@@ -133,6 +133,7 @@ python3 lq.py --update 42 -b "..."                     # Update by ID
 4. Execute approved phase, then use `/robin` if stuck
 5. Specialist skills (`/network`, `/webapp`, `/api`, `/cloud`) handle deep work
 6. When complete: `/report` generates findings + `/save` snapshots state
+7. Update files and tools path within CLAUDE.md and settings.json
 
 ---
 

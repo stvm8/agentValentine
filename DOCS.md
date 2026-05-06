@@ -361,7 +361,6 @@ Two lifecycle hooks run automatically:
    - Read `valentine/CLAUDE.md` — understand threat models and efficiency rules
 
 5. **Verify tool inventory:**
-   - Check `/home/takashi/Documents/randomFiles/Installed_Tools_Inventory_UPDATED.md`
    - Confirm key tools for your engagement type are installed
 
 ### Your First Engagement: Network Pentest Example
