@@ -20,12 +20,6 @@ AWS: PACU · awscli
 K8s: kubesplaining
 
 ## Tool Paths (not in list above → check these first)
-`~/.pdtm/go/bin/` — ProjectDiscovery suite (nuclei, httpx, katana, naabu, subfinder)
-`/opt/venvTools/bin/` — Python venv (impacket, minikerberos-*, pypykatz, msldap, certipy, dpapi, etc.)
-`/opt/azure_tools/` — Azure extras (RoadRecon, SeamlessPass, BasicBlobFinder)
-`/opt/aws_tools/` — AWS extras (PACU, aws_enumerator)
-`/opt/Pentester/ptTools/Linux/` — Linux post-ex binaries (pspy64, linpeas.sh)
-`/opt/Pentester/ptTools/` -- Various tools
 `/usr/bin/`, `/usr/local/bin/`, `/sbin` — system-installed tools
 Tool absent from all paths → output `[MISSING TOOL] <name> — install required before proceeding` with official source/install command, substitute nearest curated equivalent in the meantime, note in `progress.md`. Do not attempt the vector without it (counts as environmental prereq strike per Efficiency Rules).
 
