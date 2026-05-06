@@ -2,7 +2,7 @@
 
 **Production Ready:** 2026-05-06 | **Status:** ✅ All systems operational
 
-→ **[Back to README](README.md)** | **[Production Audit](PRODUCTION_AUDIT_2026-05-06.md)**
+→ **[Back to README](README.md)**
 
 ---
 
@@ -557,12 +557,6 @@ The strike rule, the anti-autonomy rule, the proposal format, the state files �
 **"Proposal format unexpected"**
 - Ensure you're reading full skill output (don't cut off at `[PROPOSAL]` line)
 - Verify `` — should always end with `[HALTING. AWAITING USER APPROVAL.]`
-
-**"Tool not found"**
-- Check `/home/takashi/Documents/randomFiles/Installed_Tools_Inventory_UPDATED.md`
-- Verify tool paths in `valentine/CLAUDE.md` under "Tool Paths"
-- If tool is missing, Valentine will output `[MISSING TOOL]` with install instructions
-
 ---
 
 *Built on Claude Code. Designed for pentesters who think.*
