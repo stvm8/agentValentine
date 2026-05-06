@@ -12,6 +12,10 @@ Follow format in `refs/learning_format.md`.
 Switch to Haiku model before running `/report` to save tokens.
 Use Haiku for all report writing — it is cheaper and fast enough for structured output.
 
+## Content Quality (mandatory)
+Before writing any learning or playbook entry, read `refs/content_quality.md`.
+All entries must be portable — no target names, IPs, or client-specific paths.
+
 ## Playbook Entry Format (for /absorb)
 ```
 ### Technique Name [added: YYYY-MM]

@@ -1,6 +1,6 @@
 # AMSI Bypass & Defender Evasion
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## AMSI Bypasses
 

@@ -1,5 +1,9 @@
 # Learning Format
 
+## Content Quality (mandatory)
+Before writing any entry, read `refs/content_quality.md`.
+Entries must be portable and target-agnostic. If it only applies to one target, it belongs in `progress.md`, not here.
+
 ## Before Appending — Dedup Check (mandatory)
 ```bash
 grep -i "<key_term>" {LEARNINGS}/<domain>.md

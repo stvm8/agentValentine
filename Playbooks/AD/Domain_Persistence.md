@@ -1,6 +1,6 @@
 # AD Domain Persistence Techniques
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Skeleton Key — Universal Backdoor Password on DC
 

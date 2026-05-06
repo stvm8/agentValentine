@@ -1,6 +1,6 @@
 # MSSQL Attack Chains
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### MSSQL Login Impersonation → xp_cmdshell RCE (CRTE Exam Report) [added: 2026-04]
 - **Tags:** #MSSQL #Impersonation #xp_cmdshell #PowerUpSQL #ExecuteAsLogin #RCE #T1505

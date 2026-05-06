@@ -1,6 +1,6 @@
 # Logon Script Abuse (scriptPath Hijacking)
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Overview
 Abuse `GenericWrite`/`GenericAll` over a user to set or modify their `scriptPath` attribute, pointing to a malicious script in NETLOGON. The script executes at next logon.

@@ -1,6 +1,6 @@
 # Shadow Credentials Attack
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Overview
 Abuse `GenericWrite`/`GenericAll` over a user or computer to write to `msDS-KeyCredentialLink`, then authenticate via PKINIT to obtain TGT and NT hash without knowing the password.

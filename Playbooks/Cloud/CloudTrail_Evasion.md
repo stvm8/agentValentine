@@ -1,6 +1,6 @@
 # AWS CloudTrail Evasion & Log Manipulation
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Disable CloudTrail Entirely [added: 2026-04]
 - **Tags:** #AWS #CloudTrail #DeleteTrail #LogEvasion #DefenseEvasion #AuditBypass #TrailDeletion

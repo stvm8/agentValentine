@@ -1,6 +1,6 @@
 # Kerberos Delegation Attacks
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Unconstrained Delegation — Capture Any User's TGT
 

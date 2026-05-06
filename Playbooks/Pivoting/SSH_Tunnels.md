@@ -118,7 +118,7 @@
   ```bash
   # Single subnet
   sudo sshuttle -r <user>@<PIVOT_IP> <INTERNAL_CIDR> -v
-  # e.g.: sudo sshuttle -r riley@10.10.110.35 192.168.110.0/24
+  # e.g.: sudo sshuttle -r <user>@<PIVOT_IP> 192.168.110.0/24
 
   # Multiple subnets simultaneously (e.g., after discovering a second forest)
   sudo sshuttle -r <user>@<PIVOT_IP> 192.168.110.0/24 192.168.210.0/24

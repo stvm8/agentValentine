@@ -16,7 +16,7 @@ Branches:
 ## Node 2 — Azure Infrastructure Subdomain Enumeration
 Technique: [[Cloud/Azure_Attacks#Azure Infrastructure Subdomain Enumeration via azsubenum]]
 Strike Vector: "azure subdomain enumeration"
-Condition: Company slug known (NOT full domain — use bare slug e.g. `megabigtech` not `megabigtech.com`); permutations wordlist available
+Condition: Company slug known (NOT full domain — use bare slug e.g. `contoso` not `contoso.com`); permutations wordlist available
 Standalone Severity: Low
 Branches:
   - App Services discovered (`<name>.azurewebsites.net`) → Node 3 (browse for employee names + attack surface)

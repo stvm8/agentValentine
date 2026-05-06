@@ -9,11 +9,15 @@
 |---|---|---|---|
 | DNS Zone Transfer → Vhost Discovery | SQLi_to_RCE.md | DNS server accessible, AXFR allowed | Internal vhosts, subdomains |
 | Git Source Code Disclosure | API_WebShell.md | Dev Git platform found (Gogs/Gitea) | Source code, API endpoints, secrets |
+| Credential Extraction from Git Commit History | API_WebShell.md | Public or readable Git repo (Bitbucket/GitHub/GitLab) | Hardcoded AWS keys, API credentials, passwords, OAuth tokens; AWS account ID enumeration |
 | GraphQL Introspection Query | GraphQL.md | GraphQL endpoint found | Full API schema, all queries/mutations |
 | SSRF via PDF Generation / HTML Injection | SSRF.md | PDF/image generation endpoint | Internal service access, file read |
 | Blind SSRF via Webhook/URL | SSRF.md | URL parameter or webhook input | Internal network mapping via OOB |
+| Spring Boot Actuator Recon → SSRF Discovery | SSRF.md | Java app with /actuator exposed | Env vars (bucket names, secrets) + proxy endpoint revealing SSRF surface |
+| Certificate Transparency (crt.sh) + GitHub CNAME History Subdomain Recon | SSRF.md | Target domain; no creds required | Hidden/historical subdomains and internal hostnames |
+| Nested Subdomain Pattern Fuzzing via ffuf | SSRF.md | Known subdomain prefix pattern | Additional live subdomains at deeper nesting levels |
 
-→ **Next:** Endpoints discovered → [2. Unauthenticated Endpoints]. Creds found → [3. Authenticated User]. GraphQL schema → [5. GraphQL].
+→ **Next:** Endpoints discovered → [2. Unauthenticated Endpoints]. Creds found (from git history) → pivot to cloud/infrastructure attacks. GraphQL schema → [5. GraphQL].
 
 ---
 
@@ -30,8 +34,16 @@
 | Reflected XSS via URL Parameter | XSS.md | Unescaped user input in response | Session theft, phishing |
 | LFI / Path Traversal | Command_Injection.md | File path parameter | Source code, config files, /etc/passwd |
 | Basic SSRF to Internal Services | SSRF.md | URL/IP parameter | Internal service access |
+| Capital: Unauthenticated Redis Access | API_WebShell.md | Network access to Redis 6379; no auth required | Direct DB access; extraction of secrets, sessions, credentials |
+| OpenAPI / Swagger Documentation Endpoint Discovery via ffuf | GraphQL.md | Web app with undocumented REST API | Full route map, parameters, auth requirements |
+| Client-Side Authentication Validation Bypass via Direct API | API_WebShell.md | Registration/auth enforced only in JS; direct API accessible | Registered account bypassing domain/invite restriction |
+| vAPI: Sequential ID Enumeration (BOLA) | API_WebShell.md | REST API with numeric ID params | Unauthorized user data access |
+| Capital: BFLA via FFUF Endpoint Fuzzing | API_WebShell.md | API with bearer token auth; hidden admin endpoints | Hidden admin endpoints accessible as unprivileged user |
+| ParaBank: User Enumeration via FFUF + Loan History Leak | API_WebShell.md | Unauthenticated REST API with sequential numeric IDs | Leaked user accounts, loan histories, account balances |
+| Go Registration TOCTOU → NULL Permission Admin JWT | Race_Condition.md | Go app; two-step non-atomic registration (CreateUser + UpdatePermissions); PermissionAdmin = 0 | Admin JWT via NULL→0 zero-value race; full admin access |
 
-→ **Next:** SQLi → [4]. SSTI detected → [6. SSTI Confirmed]. RCE → post-exploitation. Auth obtained → [3].
+→ **Next:** SQLi → [4]. SSTI detected → [6. SSTI Confirmed]. RCE → post-exploitation. Auth obtained → [3]. LLM chatbot found → [9. LLM Chatbot].
+| Full chain: [[go-registration-race-null-admin]] — source code review reveals non-atomic registration → asyncio/aiohttp concurrent race → NULL-permission admin JWT → flag endpoint access |
 
 ---
 
@@ -47,11 +59,31 @@
 | JWT Secret Brute Force | JWT_Attacks.md | JWT with HS256, weak secret | Forge tokens |
 | JWT kid Header Injection | JWT_Attacks.md | JWT with kid parameter | Auth bypass via path traversal |
 | Stored XSS via User Input | XSS.md | User input stored and rendered | Admin session theft, ATO |
+| vAPI: Stored XSS via Note Endpoint | XSS.md | Note API stores unsanitized HTML; text/html response | Stored XSS in admin/team browsers |
 | Blind XSS via Contact/Ticket | XSS.md | Input rendered in admin panel | Admin cookie exfil |
+| Capital: Excessive Data Exposure → CC Harvesting | API_WebShell.md | Profile/payment endpoint returns CC data; no authz check | Extracted CC data (name, number, CVC, expiry); unauthorized purchases on victim cards |
+| ParaBank: Unrestricted Loan Request Creation | API_WebShell.md | Authenticated session; loan endpoint accepts any amount | Arbitrary loan amounts approved; financial fraud/theft |
+| ParaBank: Transfer Funds via API | API_WebShell.md | Authenticated session; transfer endpoint allows unlimited transfers | Direct fund transfers to attacker account; financial theft |
 | GraphQL Batching Attack | GraphQL.md | GraphQL endpoint, rate-limited | Brute force bypass |
 | DOM-Based XSS | XSS.md | Client-side JS processes URL params | Session theft without server interaction |
 
-→ **Next:** JWT forged → admin access. RCE → post-exploitation. SQLi → [4].
+→ **Next:** JWT forged → admin access. RCE → post-exploitation. SQLi → [4]. DB creds found → [4a]. CC data exposed → credential harvesting attack.
+| Full chain: [[parabank-bola-account-takeover-fraud]] — user enumeration via FFUF → unauthenticated account takeover → loan creation + fund transfer → financial theft |
+
+---
+
+## 4a. Database Credentials Obtained
+**Signal:** Valid DB credentials found (app config, SQLi dump, credential reuse); direct DB access confirmed
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| PostgreSQL pgcrypto Heap Overflow → RCE (CVE-2026-2005) | SQLi_to_RCE.md | Postgres ≤ 17.7/16.11/15.15/14.20/18.1 + CREATE priv | OS RCE as postgres via COPY TO PROGRAM |
+| PostgreSQL Credential Interception via tcpdump + tcpkill | SQLi_to_RCE.md | Network access to port 5432 + cap_net_raw + no TLS | Plaintext PostgreSQL credentials |
+| PostgreSQL COPY FROM PROGRAM RCE (Superuser) | SQLi_to_RCE.md | psql access with superuser or pg_execute_server_program | OS reverse shell as postgres user |
+
+→ **Next:** RCE achieved → post-exploitation (privesc via Linux/Windows flows).
+| Full chain: [[postgres-pgcrypto-rce]] — pgcrypto heap overflow → CurrentUserId overwrite → superuser → OS RCE |
+| Full chain: [[postgres-sniff-host-escape]] — tcpdump+tcpkill cred sniff → COPY FROM PROGRAM RCE → core_pattern container escape → host shell |
 
 ---
 
@@ -76,6 +108,32 @@
 | GraphQL Injection / Query Manipulation | GraphQL.md | Schema known, circular types | DoS, IDOR, unauthorized data access |
 
 → **Next:** IDOR found → data extraction. Auth bypass → [3].
+
+---
+
+## 5a. Authentication Brute Force / Rate Limit Bypass
+**Signal:** Login endpoint lacks rate limiting or has bypasses; ready to test credential brute force or OTP enumeration
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| vAPI: Credential Stuffing via ffuf Pitchfork | API_WebShell.md | Email/password wordlists + no rate limiting | Valid user credentials; authenticated session |
+| vAPI: Rate Limiting Bypass via OTP Enumeration | API_WebShell.md | OTP verification endpoint + 4-6 digit range | 2FA bypass; full account takeover |
+| vAPI: Version Downgrade Attack | API_WebShell.md | Legacy API version (v1) lacks rate limiting vs v2 | Unrestricted brute force on legacy endpoint |
+| Capital: Brute Force Authentication via Credential Hints | API_WebShell.md | Target user(s) identified + profile/post hints + low-privilege account | Valid credentials for target user; complete account takeover |
+| Capital: Improper Asset Management (Version Enumeration) | API_WebShell.md | Known API version + access to endpoint | Accessible retired API versions; bypass current security | 
+
+→ **Next:** Valid creds obtained → [3. Authenticated Access]. 2FA bypassed → account takeover → [3]. Version downgrade found → test legacy endpoint attacks.
+
+---
+
+## 5b. CORS or Authorization Misconfiguration
+**Signal:** CORS headers misconfigured or authorization checking missing
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| vAPI: CORS Misconfiguration Exploitation | API_WebShell.md | API returns Access-Control-Allow-Origin: * + Credentials: true | Unauthorized access from attacker domain; XSS + credential theft |
+
+→ **Next:** Sensitive data accessed → lateral movement. XSS combined with stored payload → [3].
 
 ---
 
@@ -116,3 +174,15 @@
 | Blind SSRF via OOB | SSRF.md | No direct response, OOB possible | Internal network mapping |
 
 → **Next:** Cloud creds → Cloud/_FLOW.md. Internal access → lateral movement.
+
+---
+
+## 9. LLM Chatbot / AI Assistant Found
+**Signal:** Application exposes a chat interface, AI assistant, or automated Q&A backed by an LLM; user input is processed by a model
+
+| Technique | File | Key Prereq | Yields |
+|---|---|---|---|
+| LLM Chatbot Prompt Injection / Jailbreak | Command_Injection.md | LLM-backed endpoint; arbitrary text input | System prompt disclosure, flag/secret exfil, instruction override |
+
+→ **Next:** System prompt leaked → flag/credential extraction. Tool-call injection → SSRF or RCE if model has tool access.
+| Full chain: [[needle-haystack-subdomain-llm]] — crt.sh recon → nested subdomain fuzzing → OpenAPI discovery → client-side auth bypass → LLM chatbot prompt injection → flag exfil |

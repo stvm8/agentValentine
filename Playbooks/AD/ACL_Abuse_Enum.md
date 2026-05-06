@@ -1,6 +1,6 @@
 # ACL Abuse — Enumeration
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## ACL Enumeration
 
@@ -19,7 +19,7 @@
   Find-InterestingDomainAcl
 
   # Find ACLs for a specific user's SID
-  $sid = Convert-NameToSid wley
+  $sid = Convert-NameToSid <TARGET_USER>
   Get-DomainObjectACL -Identity * | ? {$_.SecurityIdentifier -eq $sid}
 
   # Resolve GUIDs to human-readable right names
@@ -79,7 +79,7 @@
 - **Payload/Method:**
   ```powershell
   Import-Module .\PowerView.ps1
-  $sid = Convert-NameToSid wley
+  $sid = Convert-NameToSid <TARGET_USER>
   Get-DomainObjectACL -Identity * | ? {$_.SecurityIdentifier -eq $sid}
   # With resolved GUIDs for readability:
   Get-DomainObjectACL -ResolveGUIDs -Identity * | ? {$_.SecurityIdentifier -eq $sid}

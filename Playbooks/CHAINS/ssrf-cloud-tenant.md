@@ -29,6 +29,16 @@ Standalone Severity: Critical
 Branches:
   - Role allows iam:PassRole / iam:CreatePolicyVersion / iam:AttachUserPolicy or equivalent → Node 4
   - Role is scoped low (read-only, single service) → [TERMINAL] Credential Theft — limited role (High)
+  - Role scoped to S3 + VPC endpoint policy restricts bucket access → Node 3B (Presigned URL + SSRF bypass)
+
+## Node 3B — S3 VPC Endpoint Bypass via Presigned URL [added: 2026-05]
+Technique: [[Cloud/S3_Secrets#S3-VPC-Endpoint-Policy-Bypass]]
+Strike Vector: "S3 VPC endpoint restriction bypass via presigned URL through SSRF proxy"
+Condition: Stolen IAM creds have s3:GetObject; bucket denies direct access via aws:SourceVpce condition; EC2 running SSRF proxy is inside the target VPC
+Standalone Severity: High
+Branches:
+  - Presigned URL routed through SSRF proxy within VPC succeeds → [TERMINAL] Private S3 Object Access — VPC policy bypassed (High)
+  - SSRF proxy blocks outbound to S3 or URL encoding rejected → [TERMINAL] Blocked — try direct VPC routing if shell access available
 
 ## Node 4 — Full Tenant Compromise
 Technique: [[Cloud/IAM]]

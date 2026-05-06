@@ -1,6 +1,6 @@
 # SCCM / MECM Attacks
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### PXE Boot Image Credential Extraction (PXEThief) [added: 2026-04]
 - **Tags:** #SCCM #PXE #PXEThief #BootImage #DomainJoinCreds #TFTP #T1556

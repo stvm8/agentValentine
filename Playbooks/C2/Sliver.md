@@ -9,7 +9,7 @@
 - **Context:** Run Sliver on Linux/WSL. Use HTTPS for egress.
 - **Payload/Method:**
 ```bash
-cd $HOME/Pentester/ptTools/Network/C2/Sliver/Linux
+cd /opt/Pentester/ptTools/Network/C2/Sliver/Linux
 sudo ./sliver-server_linux-amd64
 ```
 

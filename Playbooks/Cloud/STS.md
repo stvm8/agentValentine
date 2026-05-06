@@ -94,3 +94,32 @@ export AWS_ACCESS_KEY_ID=<AccessKeyId from step 4>
 export AWS_SECRET_ACCESS_KEY=<SecretAccessKey from step 4>
 export AWS_SESSION_TOKEN=<SessionToken from step 4>
 ```
+
+### AWS Account ID Enumeration via sts:GetAccessKeyInfo [added: 2026-05]
+- **Tags:** #AWS #STS #AccountIDEnum #AccessKeyInfo #Recon #IAMRecon #AccountDiscovery #CredentialAnalysis
+- **Trigger:** Extracted AWS access key from source code, git history, or environment variable but target AWS account ID is unknown
+- **Prereq:** Leaked or stolen AWS access key (format: AKIA* followed by 20 random chars); AWS CLI or SDK configured with the key
+- **Yields:** 12-digit AWS account ID owning the access key; enables downstream enumeration (S3 bucket discovery, cross-account assumption, SNS abuse)
+- **Opsec:** Low
+- **Context:** `sts:GetAccessKeyInfo` is an unauthenticated (no signature required) API endpoint that returns metadata about any AWS access key, including the account ID. This is a direct reconnaissance vector — no credentials needed to enumerate which account owns a key. Useful when credential spray fails or account ID is needed for cross-account attacks.
+- **Payload/Method:**
+  ```bash
+  # Step 1 — Configure AWS CLI with leaked key (no secret needed for GetAccessKeyInfo)
+  export AWS_ACCESS_KEY_ID=AKIA...
+  export AWS_SECRET_ACCESS_KEY=fake  # any value works; API doesn't validate signature
+  
+  # Step 2 — Call sts:GetAccessKeyInfo (unauthenticated endpoint)
+  aws sts get-access-key-info --access-key-id AKIA... --region us-east-1
+  
+  # Step 3 — Extract Account field from response (returns account ID and IAM user ARN)
+  # Response example: {"AccessKeyInfo": {"AccountId": "123456789012", ...}}
+  
+  # Step 4 — Use enumerated account ID for downstream attacks
+  # - S3 bucket enumeration (bucket naming often includes account ID)
+  # - Cross-account role assumption (--role-arn arn:aws:iam::<ACCOUNT_ID>:role/...)
+  # - SNS subscription abuse (subscribe to SNS topics in target account)
+  
+  # Complete example:
+  aws sts get-access-key-info --access-key-id AKIA2ASDF1234ABCD5EF --region us-east-1 --output json | jq '.AccessKeyInfo.AccountId'
+  # Output: 123456789012
+  `````

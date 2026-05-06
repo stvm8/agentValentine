@@ -238,3 +238,44 @@ curl -s "http://target/graphql" -X POST \
   -H "Content-Type: application/json" \
   -d '{"query":"{ user(id: 1) { email role sensitiveField @include(if: true) } }"}'
 ```
+
+### OpenAPI / Swagger Documentation Endpoint Discovery via ffuf [added: 2026-05]
+- **Tags:** #API #OpenAPI #Swagger #Documentation #EndpointDiscovery #ffuf #APISchema #InfoDisclosure
+- **Trigger:** Web application or API discovered with no obvious documentation; fuzzing for common API schema endpoints to enumerate all routes and parameters
+- **Prereq:** API base URL accessible + ffuf + wordlist containing common API documentation paths
+- **Yields:** OpenAPI/Swagger specification revealing all API endpoints, methods, parameters, authentication schemes, and data models — equivalent to full API documentation
+- **Opsec:** Low
+- **Context:** Most modern APIs expose their OpenAPI specification at predictable paths. Discovering it gives a complete map of every endpoint including hidden admin routes, auth endpoints, and undocumented parameters. Combine with direct API calls (bypassing UI restrictions) to access functionality the frontend doesn't expose.
+- **Payload/Method:**
+  ```bash
+  # Fuzz for documentation endpoints
+  ffuf -u "https://target.com/FUZZ" \
+    -w /opt/wordlists/api-objects.txt \
+    -mc 200,301,302 -s
+
+  # Common documentation paths to try:
+  /documentation
+  /swagger
+  /swagger-ui
+  /swagger-ui.html
+  /api-docs
+  /api/docs
+  /openapi
+  /openapi.json
+  /openapi.yaml
+  /v1/openapi.json
+  /v2/api-docs
+  /v3/api-docs
+  /.well-known/api-catalog
+
+  # Fetch and parse the spec
+  curl -s "https://target.com/documentation" | jq '.paths | keys[]'
+
+  # Extract all POST endpoints (likely mutation/action routes)
+  curl -s "https://target.com/openapi.json" | \
+    jq -r '.paths | to_entries[] | select(.value | has("post")) | .key'
+
+  # Extract auth-related endpoints from spec
+  curl -s "https://target.com/openapi.json" | \
+    jq -r '.paths | keys[] | select(test("auth|login|register|token"; "i"))'
+  ```

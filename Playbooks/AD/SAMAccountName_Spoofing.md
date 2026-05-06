@@ -1,6 +1,6 @@
 # sAMAccountName Spoofing (NoPac / CVE-2021-42278 + CVE-2021-42287)
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Overview
 Exploit the ability to create machine accounts (default `ms-DS-MachineAccountQuota = 10`) combined with the KDC's failure to validate sAMAccountName changes. Create a machine account, rename it to match the DC's sAMAccountName (without the `$`), request a TGT, rename it back, then use S4U2self to get a service ticket as a privileged user.

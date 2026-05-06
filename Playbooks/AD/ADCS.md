@@ -1,6 +1,6 @@
 # Active Directory Certificate Services (AD CS) Attacks
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### ESC1 – Enrollee Supplies Subject (Sliver / CRTP) [added: 2026-04]
 - **Tags:** #ESC1 #ADCS #Certify #Rubeus #PKINIT #CertificateAbuse #EnrolleeSuppliesSubject #T1649

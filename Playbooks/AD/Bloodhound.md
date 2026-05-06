@@ -1,6 +1,6 @@
 # BloodHound – AD Attack Path Enumeration
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### SharpHound C# Ingestor (On-Target) [added: 2026-04]
 - **Tags:** #SharpHound #BloodHound #ADGraph #Ingestor #CSharp #AttackPath #T1087.002

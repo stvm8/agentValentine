@@ -1,6 +1,6 @@
 # AWS Golden SAML Attack
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Golden SAML — Forge Authentication Tokens for AWS/O365 (Bypasses MFA) [added: 2026-04]
 - **Tags:** #AWS #GoldenSAML #ADFS #SAML #MFABypass #Shimit #TokenForging #FederationAbuse #O365

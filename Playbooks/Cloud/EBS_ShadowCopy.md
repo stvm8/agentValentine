@@ -1,6 +1,6 @@
 # AWS EBS Shadow Copy Attack
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Shadow Copy Attack — Steal NTDS.dit from Windows EC2 via Cross-Account Snapshot [added: 2026-04]
 - **Tags:** #AWS #EBS #ShadowCopy #NTDS #ActiveDirectory #CrossAccount #SnapshotExfil #CloudCopy #CredentialTheft

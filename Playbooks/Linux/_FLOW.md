@@ -28,8 +28,10 @@
 | Custom SUID Binary Exploitation | SUID_Capabilities.md | Unknown SUID binary found | Root shell via library hijack or logic flaw |
 | Writable Systemd Service / Timer | Service_Misconfig.md | Writable .service file | Root shell via service restart |
 | NFS no_root_squash Exploitation | Service_Misconfig.md | NFS share with no_root_squash | Root shell via SUID binary on NFS |
+| Terraform State File Race Condition RCE | Privilege_Escalation.md | World-writable terraform.tfstate + cron runs terraform apply as privileged user | RCE as cron user via malicious statefile-rce provider |
 
 → **Next:** Root obtained → done. Pivot needed → Pivoting/_FLOW.md.
+| Full chain: [[terraform-statefile-cron-rce]] — world-writable tfstate race → statefile-rce provider injection → cron-triggered RCE as privileged user → flag exfil |
 
 ---
 

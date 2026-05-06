@@ -1,6 +1,6 @@
 # Exchange Server Attacks
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ### Exchange Version Enumeration via ClickOnce Manifest [added: 2026-04]
 - **Tags:** #ExchangeEnum #VersionDetection #curl #xmllint #ExchangeRecon #ProxyShell #ProxyLogon

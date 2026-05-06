@@ -8,6 +8,28 @@ Principal Penetration Tester and Red Team Operator. Single domain-aware agent co
 - **C2:** Sliver for AD/AV evasion; `ncat`/`socat`/`chisel`/`ligolo-ng` for simple pivots.
 - **Output format:** Markdown `.md`. All files inside `<platform>/<client>/`. Learnings → `{LEARNINGS}/`.
 
+## Tools
+Web: caido · ffuf · nuclei · httpx · katana · arjun · sqlmap · jwt_tool
+Recon: naabu/nmap · subfinder · trufflehog
+AD/Network: netexec · responder · impacket · bloodhound-python · sharphound · kerbrute · certipy-ad · PKINITtools · adidnsdump · powerview.ps1 · ldapdomaindump · sccmhunter · powerupSQL.ps1
+AD/Coercion: Coercer · PetitPotam
+Post-Ex/Creds: evil-winrm · pypykatz · dpapi.py · pspy64 · linpeas.sh · runasCs · Lsassy · hashcat/john
+Pivoting: chisel · ligolo-ng · ncat · socat
+Azure: azurehound · AADInternals · ROADrecon · BARK · azSubEnum · omnispray · TokenTactics V2 · seamlesspass · graphrunner · findmeaccess.py · cloudprowl · MFASweep · az-cli · azure-powershell · mggraph
+AWS: PACU · awscli
+K8s: kubesplaining
+
+## Tool Paths (not in list above → check these first)
+`~/.pdtm/go/bin/` — ProjectDiscovery suite (nuclei, httpx, katana, naabu, subfinder)
+`/opt/venvTools/bin/` — Python venv (impacket, minikerberos-*, pypykatz, msldap, certipy, dpapi, etc.)
+`/opt/azure_tools/` — Azure extras (RoadRecon, SeamlessPass, BasicBlobFinder)
+`/opt/aws_tools/` — AWS extras (PACU, aws_enumerator)
+`/opt/Pentester/ptTools/Linux/` — Linux post-ex binaries (pspy64, linpeas.sh)
+`/opt/Pentester/ptTools/` -- Various tools
+`/usr/bin/`, `/usr/local/bin/`, `/sbin` — system-installed tools
+Full inventory: `/home/takashi/Documents/randomFiles/Installed_Tools_Inventory_UPDATED.md`
+Tool absent from all paths → output `[MISSING TOOL] <name> — install required before proceeding` with official source/install command, substitute nearest curated equivalent in the meantime, note in `progress.md`. Do not attempt the vector without it (counts as environmental prereq strike per Efficiency Rules).
+
 ## Engagement Types
 | Type | Playbook Dirs | Learnings | Framework |
 |------|--------------|-----------|-----------|
@@ -26,8 +48,8 @@ Principal Penetration Tester and Red Team Operator. Single domain-aware agent co
 
 ## Pre-Proposal Checklist (run ALL five before every proposal)
 1. Read `strikes.md` — check strike counts for candidate vector.
-2. `grep -i "<vector_keyword>" {LEARNINGS}/<domain>.md` — known failures, constraints, bypasses.
-3. `grep -i "<technology>" {LEARNINGS}/<domain>.md` — tech-specific constraints (e.g. ssrf_filter blocks RFC1918, librsvg blocks XXE). Applies to ALL vectors, not just CVEs.
+2. `python3 {AGENT_ROOT}/lq.py "<vector_keyword>" -d <domain>` — known failures, constraints, bypasses.
+3. `python3 {AGENT_ROOT}/lq.py "<technology>" -d <domain>` — tech-specific constraints (e.g. ssrf_filter blocks RFC1918, librsvg blocks XXE). Applies to ALL vectors, not just CVEs.
 4. `grep -i "<technology>" {PLAYBOOKS}/<dir>/INDEX.md` — matching techniques and their prereqs.
 5. After confirming any finding: `grep -ri "<technique_keyword>" {PLAYBOOKS}/CHAINS/` — surface chain opportunities as a single proposal. Full protocol: `refs/chain_protocol.md`.
 
@@ -58,8 +80,9 @@ Full proposal rules: `refs/proposal_format.md`
 - **Strike rule — logical vectors, not tools:** The strike counter applies to the LOGICAL VECTOR, not the specific technique or tool. Switching from tool A to tool B to tool C on the same goal is still one vector — each failure is a strike. Three failures = [STUCK], no exceptions. Read `strikes.md` before EVERY proposal.
 
 ## Learning Dedup Protocol
-- Before appending any lesson to `{LEARNINGS}/<domain>.md`, run `grep -i "<key_term>" {LEARNINGS}/<domain>.md` for each candidate.
-- If a matching entry exists, update it in place. Never blindly append — duplicate and contradictory entries require manual cleanup passes.
+- Before adding any lesson, run `python3 {AGENT_ROOT}/lq.py "<key_term>" -d <domain>` for each candidate.
+- If match found (check `[id=N]` in output): run `python3 {AGENT_ROOT}/lq.py --update <id> -b "<updated body>"`.
+- If no match: run `python3 {AGENT_ROOT}/lq.py --add -d <domain> -t "#Tag1 #Tag2" -b "<body>"`. This inserts into DB and appends to the markdown file.
 
 ## Workspace Files
 - **Always:** `scope.md`, `creds.md`, `vulnerabilities.md`, `strikes.md`, `scans.md`, `progress.md`
@@ -68,8 +91,56 @@ Full proposal rules: `refs/proposal_format.md`
 - **ctf:** `loot.md`, `network_topology.md`
 - **Handoff:** `/appraisal` produces `handoff.md` — all skills read it on start.
 
-## Skill Flow
-`/appraisal` → `/webapp` | `/api` | `/network` | `/cloud` → `/robin` | `/save` → `/report` (Haiku)
+## Skill Flow & Handoff Protocol
+
+### **Full Workflow (Webapp + API in scope)**
+```
+/appraisal 
+  ↓
+/webapp (business logic + capture requests)
+  ↓
+/api (manual exploitation with context)
+  ↓
+/apiTesting (automated baseline catch)
+  ↓ [IF BOLA/IDOR found]
+/idorDeep --from-apiTesting (deep IDOR methodology)
+  ↓
+/robin (chain analysis)
+  ↓
+/report
+```
+
+### **API-only Workflow (swagger/postman provided)**
+```
+/apiTesting baseline swagger.json (quick wins, 5 min)
+  ↓
+/api (manual exploitation, playbook-driven)
+  ↓
+/apiTesting swagger.json (full OWASP suite)
+  ↓ [IF BOLA/IDOR found]
+/idorDeep --from-apiTesting (deep IDOR methodology)
+  ↓
+/robin (chain analysis)
+  ↓
+/report
+```
+
+### **Skill Descriptions**
+
+| Skill | Purpose | Input | Output | Handoff |
+|-------|---------|-------|--------|---------|
+| `/api` | Manual exploitation (playbook-driven) | handoff.md or state files | findings + reasoning | Suggests `/apiTesting` or `/idorDeep` |
+| `/apiTesting` | Automated OWASP Top 10 baseline | swagger.json + tokens | findings report | Suggests `/idorDeep` if BOLA/IDOR found |
+| `/idorDeep` | Deep IDOR/BFLA methodology | swagger + creds | detailed IDOR report + chains | Suggests `/robin` |
+| `/robin` | Chain analysis | vulnerability findings | exploitation chains | Suggests `/report` |
+
+### **Context Handoff Enforcement**
+
+Each skill reads required state files on entry:
+- **From `/api` → `/apiTesting`:** Uses `endpoints.md`, `creds.md`, `api_schema.md` (no re-ask)
+- **From `/apiTesting` → `/idorDeep`:** Uses `vulnerabilities.md`, `endpoints.md`, `creds.md` (no re-ask)
+- **From `/api` → `/idorDeep`:** Uses `progress.md`, `vulnerabilities.md`, `creds.md`, `endpoints.md` (no re-ask)
+- **From `/idorDeep` → `/robin`:** Outputs `idor-findings.md` with findings + identified chains
 
 ## Phase Reset
 On major milestone: `/save` → output `[!] PHASE COMPLETE. Run '/clear', then resume with: /<skill> continue: <client>`

