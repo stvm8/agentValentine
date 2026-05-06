@@ -4,6 +4,8 @@
 
 **Status:** ✅ Production Ready | **Version:** 2026-05-06
 
+~~The agent is built with Obsidian, however Obsidian is not required for the agent to work~~
+
 ---
 
 ## Design Philosophy
