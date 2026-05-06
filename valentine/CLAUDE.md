@@ -27,7 +27,6 @@ K8s: kubesplaining
 `/opt/Pentester/ptTools/Linux/` — Linux post-ex binaries (pspy64, linpeas.sh)
 `/opt/Pentester/ptTools/` -- Various tools
 `/usr/bin/`, `/usr/local/bin/`, `/sbin` — system-installed tools
-Full inventory: `/home/takashi/Documents/randomFiles/Installed_Tools_Inventory_UPDATED.md`
 Tool absent from all paths → output `[MISSING TOOL] <name> — install required before proceeding` with official source/install command, substitute nearest curated equivalent in the meantime, note in `progress.md`. Do not attempt the vector without it (counts as environmental prereq strike per Efficiency Rules).
 
 ## Engagement Types
