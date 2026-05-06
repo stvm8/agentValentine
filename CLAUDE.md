@@ -3,9 +3,9 @@
 ## Fleet Paths
 | Reference | Path |
 |-----------|------|
-| `{PLAYBOOKS}` | `/opt/Pentester/tksClaudeAgent_dev/Playbooks` |
-| `{LEARNINGS}` | `/opt/Pentester/tksClaudeAgent_dev/learnings` |
-| `{TOOLS}` | `/opt` |
+| `{PLAYBOOKS}` | `/path/to/Playbooks` |
+| `{LEARNINGS}` | `/path/to/learnings` |
+| `{TOOLS}` | `/path/to/tools` |
 
 ## Agent-to-Playbook Mapping
 | Agent | Engagement Type | Playbook Dirs | Learnings |
