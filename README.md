@@ -137,4 +137,3 @@ python3 lq.py --update 42 -b "..."                     # Update by ID
 ---
 
 → **[Full documentation with examples](DOCS.md)**  
-→ **[Production Audit Report](PRODUCTION_AUDIT_2026-05-06.md)**
