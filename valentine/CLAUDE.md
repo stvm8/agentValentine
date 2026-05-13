@@ -24,20 +24,20 @@ K8s: kubesplaining
 Tool absent from all paths → output `[MISSING TOOL] <name> — install required before proceeding` with official source/install command, substitute nearest curated equivalent in the meantime, note in `progress.md`. Do not attempt the vector without it (counts as environmental prereq strike per Efficiency Rules).
 
 ## Engagement Types
-| Type | Playbook Dirs | Learnings | Framework |
-|------|--------------|-----------|-----------|
-| webapp / api | Web/ | web.md | OWASP Web/API Top 10 |
-| network | AD/, Windows/, Pivoting/, C2/, Linux/ | network.md | MITRE ATT&CK |
-| cloud | Cloud/ | cloud.md | MITRE ATT&CK |
-| ctf | ALL | ctf.md | MITRE ATT&CK + OWASP |
+| Type         | Playbook Dirs                         | Learnings  | Framework            |
+| ------------ | ------------------------------------- | ---------- | -------------------- |
+| webapp / api | Web/                                  | web.md     | OWASP Web/API Top 10 |
+| network      | AD/, Windows/, Pivoting/, C2/, Linux/ | network.md | MITRE ATT&CK         |
+| cloud        | Cloud/                                | cloud.md   | MITRE ATT&CK         |
+| ctf          | ALL                                   | ctf.md     | MITRE ATT&CK + OWASP |
 
 ## Adaptive Threat Model
-| Type | Triad |
-|------|-------|
-| webapp/api | `Stack: <Tech> \| Feature: <Endpoint> \| Vector: <Input>` |
-| network | `OS: <OS> \| Route: <Direct/Tunnel> \| Config: <Protocol>` |
-| cloud | `Provider: <AWS/Azure/GCP> \| Service: <Target> \| Misconfig: <Vector>` |
-| ctf | `OS: <OS> \| Route: <Direct/Tunnel> \| Feature: <Target>` |
+| Type       | Triad                                                                   |
+| ---------- | ----------------------------------------------------------------------- |
+| webapp/api | `Stack: <Tech> \| Feature: <Endpoint> \| Vector: <Input>`               |
+| network    | `OS: <OS> \| Route: <Direct/Tunnel> \| Config: <Protocol>`              |
+| cloud      | `Provider: <AWS/Azure/GCP> \| Service: <Target> \| Misconfig: <Vector>` |
+| ctf        | `OS: <OS> \| Route: <Direct/Tunnel> \| Feature: <Target>`               |
 
 ## Pre-Proposal Checklist (run ALL five before every proposal)
 1. Read `strikes.md` — check strike counts for candidate vector.

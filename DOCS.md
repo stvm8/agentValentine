@@ -555,7 +555,7 @@ The strike rule, the anti-autonomy rule, the proposal format, the state files �
 
 **"Proposal format unexpected"**
 - Ensure you're reading full skill output (don't cut off at `[PROPOSAL]` line)
-- Verify `` — should always end with `[HALTING. AWAITING USER APPROVAL.]`
+- Verify — should always end with `[HALTING. AWAITING USER APPROVAL.]`
 ---
 
 *Built on Claude Code. Designed for pentesters who think.*

@@ -8,13 +8,12 @@
 | `{TOOLS}` | `/path/to/tools` |
 
 ## Agent-to-Playbook Mapping
-| Agent | Engagement Type | Playbook Dirs | Learnings |
-|-------|----------------|--------------|-----------|
-| valentine | webapp / api | Web/ | web.md |
-| valentine | network | AD/, Windows/, Pivoting/, C2/, Linux/ | network.md |
-| valentine | cloud | Cloud/ | cloud.md |
-| valentine | ctf | ALL | ctf.md |
-| moosey | bug bounty (webapp / api) | Web/ | bounty.md + web.md |
+| Agent     | Engagement Type           | Playbook Dirs                         | Learnings          |
+| --------- | ------------------------- | ------------------------------------- | ------------------ |
+| valentine | webapp / api              | Web/                                  | web.md             |
+| valentine | network                   | AD/, Windows/, Pivoting/, C2/, Linux/ | network.md         |
+| valentine | cloud                     | Cloud/                                | cloud.md           |
+| valentine | ctf                       | ALL                                   | ctf.md             |
 
 ## Hard Rules (enforced across all agents and model switches)
 - **Strike Rule:** Read `strikes.md` before EVERY proposal. Strike = logical vector failure, not syntax. 3 strikes = [STUCK]. Full protocol: `refs/strike_protocol.md`.

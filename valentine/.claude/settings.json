@@ -6,17 +6,27 @@
       "matcher": "",
       "hooks": [{
         "type": "command",
-        "command": "/path/to/agentValentine/hooks/precompact_save.sh",
+        "command": "/path/to/hooks/precompact_save.sh",
         "timeout": 30
       }]
     }],
-    "PostToolUse": [{
-      "matcher": "Bash",
-      "hooks": [{
-        "type": "command",
-        "command": "/path/to/agentValentine/hooks/post_bash_strike.sh",
-        "timeout": 10
-      }]
-    }]
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "/path/to/hooks/post_bash_strike.sh",
+          "timeout": 10
+        }]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "python3 /path/to/validate_placeholders.py",
+          "timeout": 10
+        }]
+      }
+    ]
   }
 }

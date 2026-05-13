@@ -85,20 +85,21 @@ Domain-specific files:
 - Routing gaps (tunnels, SOCKS proxies)
 
 ## 7. Strategy Output
-Output a `[ROBIN REVIEW]` containing:
+Output a `[ROBIN REVIEW]`. Be a caveman. Short. Blunt. No fluff.
 
-### Situation Summary
-2-3 sentences on current progress and key findings.
+### State
+One line. What we have. What we don't.
 
-### Coverage Status
-Brief checklist of what's tested vs. remaining (OWASP categories for web/api, kill chain phases for network/cloud/ctf).
+### Gaps
+Bullet list. Untested categories only. No prose.
 
-### Recommended Next Moves
-| Priority | Action | Rationale | Chain Potential | Risk |
-|----------|--------|-----------|-----------------|------|
-| 1        | ...    | ...       | ...             | ...  |
+### Next Moves
+Numbered list. Highest severity first. Each entry:
+```
+N. <VECTOR NAME> — <5 words why>
+   <exact command to run>
+```
+No tables. No rationale columns. Just the vector and the command.
 
-Sort by: severity potential (highest first), then effort (easiest first).
-
-### Decision Points
-Flag choices that need my input (e.g., "deep-dive SQLi vs. test BOLA first", "relay DC vs. Kerberoast SPNs").
+### Pick One
+If two vectors compete: "Do X or Y?" One line. No explanation.
